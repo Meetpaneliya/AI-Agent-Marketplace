@@ -1,0 +1,222 @@
+# Product Requirements Document (PRD)
+## AI Agent Marketplace — "Agent Store" for Downloadable Automation Workflows
+
+**Version:** 1.0 (Draft)
+**Date:** July 28, 2026
+**Model Reference:** ThemeForest / Envato Market / TemplateMonster — but for AI agents & automation workflows instead of website themes
+
+---
+
+## 1. Executive Summary
+
+An open, two-sided marketplace where anyone can **build an AI agent / automation workflow on any platform** (n8n, Make, Zapier, LangChain, custom Python, etc.) and **list it for sale as a downloadable file**. Buyers browse, purchase, download, and self-host the agent in their own environment.
+
+This is fundamentally a **digital goods marketplace** (like ThemeForest) applied to the AI agent/automation category — not a hosting platform. The platform's core value is **discovery + trust + transaction**, not execution.
+
+---
+
+## 2. Problem Statement & Opportunity
+
+- Businesses increasingly want AI agents (lead-gen bots, support agents, data-scraping workflows, content pipelines) but **building from scratch is expensive** and requires technical skill.
+- Freelancers/developers/no-code builders are already creating these workflows for clients one-off, with **no reusable resale channel**.
+- Existing marketplaces (ThemeForest, Envato, Gumroad) don't have **agent/workflow-specific structure** — no way to show what triggers, what integrations, what AI model is used, compatibility, etc.
+- Opportunity: become the **"ThemeForest of AI Agents"** — first-mover advantage in a category that's growing fast (n8n, Make, LangChain ecosystems exploding).
+
+---
+
+## 3. Target Users
+
+### 3.1 Seller Persona
+- Anyone with an account can list — **open marketplace**, no gatekeeping at signup (per your decision).
+- Includes: freelance automation builders, agencies, hobbyist no-coders, AI developers.
+- Motivation: passive income from reusable workflows, portfolio/visibility.
+
+### 3.2 Buyer Persona
+- SMB owners who want to deploy automation without building it themselves.
+- Agencies/freelancers who want to buy a base workflow and customize for clients (resell rights become a licensing question — see §7).
+- Developers who want a working reference/template to save time.
+
+---
+
+## 4. Product Scope
+
+### MVP (Phase 1)
+- Buyer & Seller accounts (single account type, role-switchable)
+- Seller: create listing, upload downloadable file(s), set pricing (one-time)
+- Buyer: browse, search, filter, preview, purchase, download
+- Payments: one-time purchase + optional recurring subscription (updates/support)
+- Basic trust layer: file scanning, seller verification badge, reviews/ratings
+- Admin: listing approval queue, dispute handling, payout management
+
+### Phase 2
+- Version control for listings (seller pushes updates, buyers with active subscription get new version)
+- Seller analytics dashboard (views, conversion, revenue)
+- Categories/tags taxonomy expansion, "compatible platform" filters (n8n/Make/Zapier/LangChain/etc.)
+- Affiliate/referral program
+- Bundles & collections
+
+### Phase 3 (future)
+- Optional hosted "try before you buy" sandbox preview
+- API marketplace layer (agent-as-a-service, hosted execution) — natural extension once downloadable model is validated
+- White-label/custom request marketplace (buyer posts requirement, sellers bid)
+
+---
+
+## 5. Core End-to-End Flows
+
+### 5.1 Seller Flow — List an Agent for Sale
+1. Sign up → choose "Sell" role (or toggle from single account)
+2. Seller onboarding: profile, payout method (bank/UPI/PayPal/Stripe Connect), ID/email verification
+3. Create Listing — **mandatory fields, listing cannot go live without these**:
+   - Title, description, category (e.g., Sales & CRM, Customer Support, Data Scraping, Content Generation, Marketing Automation)
+   - Platform/tool compatibility tag (n8n, Make, Zapier, LangChain, custom script, etc.)
+   - **Demo video showing the agent working on a real-world example/use case** (not just a UI walkthrough — actual output demonstration)
+   - **Usage description** — what problem it solves, what inputs/outputs to expect, ideal use case
+   - **Required API keys/credentials list** — exact list of what buyer must bring themselves (e.g., "requires your own OpenAI API key", "requires your own Google Sheets OAuth"). Since buyers always use their own keys, this list must be explicit and complete — this is also the core of the platform's liability shield (see §10).
+   - **Setup guidance / step-by-step docs** — how to import the file, where to plug in keys, how to test it's working
+   - Screenshots/workflow diagram
+   - Download workflow file option (the actual purchasable file — JSON export, .zip, script files, etc.)
+   - Pricing: one-time price + optional subscription add-on for updates/support
+4. Submit for review → **automated security scan** + **manual/admin quality check** (critical, see §8)
+5. Approved → listing goes live in marketplace
+6. Seller dashboard: sales, revenue, reviews, buyer questions, push updates to existing listing
+
+### 5.2 Buyer Flow — Discover & Purchase
+1. Browse/search marketplace (filter by category, platform, price, rating, "verified seller")
+2. View listing page: demo video (real-world usage), usage description, required API keys checklist, setup guidance, screenshots, reviews, FAQ — buyer should know **exactly** what they need to bring (their own API keys/credentials) before purchasing, no surprises
+3. (Optional Phase 3) Preview/sandbox test before buying
+4. Purchase:
+   - One-time payment → instant download access unlocked
+   - OR one-time + subscribe to updates/support → recurring billing starts
+5. Download page: file + setup docs + license terms — **download option only becomes active after successful purchase** (see §5.3 for refund-side download lock)
+6. Post-purchase: buyer can message seller for setup help, leave review, or raise a refund/dispute request (see §5.3)
+7. If subscribed: buyer notified when seller pushes new version → re-download
+
+### 5.3 Post-Purchase / Support & Refund Flow
+- Buyer raises support ticket → routed to seller first (marketplace mediates if unresolved)
+- Subscription lapses → buyer keeps last downloaded version but stops receiving updates (standard SaaS-template license logic, same as ThemeForest extended support model)
+
+**Refund/Dispute Flow (chat-based resolution):**
+1. Buyer requests refund (any reason) → opens a chat/dispute thread tied to that purchase
+2. Seller gets notified instantly (in-app + email) of the refund request with buyer's reason
+3. Buyer and seller connect directly in the chat thread to troubleshoot/discuss (e.g., seller can offer setup help to resolve the issue instead of a refund)
+4. Final decision reached — either:
+   - Issue resolved, buyer withdraws refund request, OR
+   - Seller approves refund, OR
+   - No resolution → escalates to marketplace admin for mediation (with chat history as evidence)
+5. **Download access lock**:
+   - **Before purchase**: download button is disabled/locked — buyer cannot access the file
+   - **After refund is approved**: download access is immediately revoked — buyer can no longer re-download the file, and any active subscription tied to that purchase is cancelled
+   - This should be enforced at the backend (signed/expiring download URLs tied to purchase status), not just hidden in UI, since buyer could otherwise download once and still request refund
+
+### 5.4 Payout Flow (Seller)
+- Marketplace takes commission % on every sale (hybrid model: commission + optional subscription revenue share)
+- Payout on schedule (e.g., bi-weekly/monthly) after refund window closes
+- Minimum payout threshold, tax/invoice handling per region
+
+---
+
+## 6. Key Features by Module
+
+| Module | Features |
+|---|---|
+| **Catalog/Discovery** | Search, filters (category, platform, price, rating), trending/featured, collections |
+| **Listing Page** | Rich media, docs, requirements checklist, version history, Q&A section, reviews |
+| **Seller Dashboard** | Listing management, sales analytics, payout history, buyer messages, version push |
+| **Buyer Dashboard** | Purchase history, downloads, active subscriptions, support tickets |
+| **Payments & Licensing** | One-time + subscription billing, license type selector (single-use / resale-allowed / extended), refund handling |
+| **Trust & Safety** | Automated malware/code scan on upload, manual review queue, seller verification badges, rating/review system, report-listing flow |
+| **Admin Panel** | Approval queue, dispute resolution, commission config, category management, fraud monitoring |
+| **Notifications** | New version alerts, sale alerts, support ticket alerts |
+
+---
+
+## 7. Monetization Model (Hybrid — as decided)
+
+- **One-time purchase price**: buyer pays once, owns the downloaded version forever (standard digital-goods license, similar to ThemeForest regular license).
+- **Optional subscription add-on**: buyer pays recurring fee for:
+  - Access to future version updates
+  - Direct seller support/setup help
+  - (Optional) priority bug-fix requests
+- **Marketplace commission**: platform takes a % cut on both one-time sales and subscription revenue (industry benchmark: Envato-style ~30-50% on one-time; consider lower % like 15-20% early on to attract sellers, since it's an open/unproven marketplace).
+- **License types to define clearly** (important legal/product decision):
+  - Personal/Single-use license
+  - Commercial/multi-client license (for agencies reselling setup services)
+  - Extended license (white-label/resale of the workflow itself)
+
+---
+
+## 8. Trust, Safety & Quality Control (Critical — Open Marketplace + Downloadable Files)
+
+Since **anyone can upload** and buyers **self-host downloaded code/workflows**, this is the single biggest risk area — malicious code, broken workflows, or low-quality listings will kill marketplace trust fast. Recommend:
+
+1. **Automated scanning** on every upload — malware scan, credential-leak scan (check for hardcoded API keys), dependency check.
+2. **Manual review queue** before first-time publish (at least for MVP, until trust signals mature).
+3. **Sandboxed test run** where feasible (e.g., validate n8n/Make JSON structure without executing against live data).
+4. **Mandatory documentation standard (enforced at listing creation, §5.1)** — demo video, usage description, required API keys/permissions, and setup guide must all be present before a listing can be submitted for review. This is both a quality gate and a liability shield.
+5. **Seller reputation system** — verified badge after X successful sales + no reports, rating decay for unresolved complaints.
+6. **Clear buyer warning/consent** — "you are installing third-party code in your own environment, review before granting API access" (also reduces platform liability).
+7. **Report & takedown flow** with fast admin response SLA.
+
+---
+
+## 9. Success Metrics (KPIs)
+
+- **Supply side:** # of active sellers, # of new listings/month, listing approval rate
+- **Demand side:** # of buyers, conversion rate (view → purchase), repeat purchase rate
+- **Trust:** avg rating, % listings flagged/removed, refund rate
+- **Revenue:** GMV (gross merchandise value), take-rate revenue, subscription attach rate
+- **Retention:** seller retention (keep listing/updating), buyer retention (subscription renewal rate)
+
+---
+
+## 10. Resolved Decisions
+
+- **Liability (Resolved)**: Buyers always use their **own API keys/credentials** — never the seller's or platform's. Every listing mandatorily discloses the exact API keys/access required, backed by a real-world demo video and setup guidance. This keeps the platform in a "distribution channel" role (like Envato) rather than a service provider handling buyer credentials — ToS should explicitly state the platform is not liable for how a downloaded agent performs once buyer supplies their own keys and deploys it in their own environment.
+- **Dispute/Refund Policy (Resolved)**: Chat-based resolution — buyer can request refund for any reason, seller is notified, both parties discuss/resolve directly in-thread, admin mediates only if unresolved. Download access is backend-locked (signed/expiring URLs) — **no download before purchase, and access revoked immediately on refund approval**. This also solves the "buyer downloads then refunds" abuse risk.
+
+## 11. Recommendations (Your Call — Best Practice Applied)
+
+- **Quality bar at launch**: Even though signup/listing creation is fully open to anyone, recommend **keeping every listing on manual admin review before it goes live** for the first 3–6 months (or until a critical mass of trusted sellers/reviews exists). This doesn't restrict *who* can sell — it just adds a quality gate before publish, which protects buyer trust early on. Once seller reputation system matures (e.g., seller has 5+ approved listings with no complaints), auto-approve their future listings to reduce friction and admin overhead.
+- **Platform fragmentation**: Launch with a **"Compatible Platform" filter/tag as a first-class discovery field** (n8n, Make, Zapier, LangChain, custom script, etc.) so buyers only see agents they can actually run. Recommend **starting the MVP catalog scoped to 1–2 platforms (e.g., n8n + Make)** since they're the most popular self-hostable/no-code workflow tools right now — this keeps the mandatory-doc/quality-review process manageable, then expand platform coverage in Phase 2 once the review process is proven.
+
+## 12. Remaining Open Question
+
+- **Commission %**: still needs competitive benchmarking against Envato/Gumroad/AppSumo-style marketplaces before finalizing — recommend starting slightly lower than Envato's ~30-50% (e.g., 15-20%) to attract early sellers to an unproven marketplace, then adjust once GMV and seller supply stabilize.
+
+---
+
+## 14. Design & Theme Guidelines (Dark Theme)
+
+Chosen direction: **deep blue-black base (not pure black) + warm amber accent + teal secondary accent** — deliberately avoids the two most common AI-product clichés (pure-black-with-neon-purple, and generic SaaS blue-on-white). Amber signals "marketplace/value" (price, buy CTA); teal signals "trust/verification" (badges, platform tags) — this split gives every screen a clear visual grammar: gold = money-related actions, teal = trust-related signals.
+
+| Token | Hex | Usage |
+|---|---|---|
+| Void | `#0B0E14` | Page background |
+| Panel | `#141B26` | Cards, listing tiles, nav bar |
+| Ledger | `#1F2733` | Borders, dividers, hairlines |
+| Signal (amber) | `#E8A33D` | Primary CTA, price, "Buy now", subscribe button |
+| Circuit (teal) | `#3FC7B0` | Verified-seller badge, platform tags (n8n/Make/etc.), links, success states |
+| Text primary | `#EDEFF4` | Headings, titles |
+| Text muted | `#8891A0` | Descriptions, metadata, secondary labels |
+| Danger | `#E2554C` | Refund/dispute alerts, error states, "report listing" |
+
+**Typography direction:** clean geometric/humanist sans for UI (headings + body), and a **monospace face for anything technical** — file names, required API key fields, workflow JSON snippets, version numbers. Since this marketplace sells code/workflow files, a mono accent for technical details reinforces credibility without needing extra visual decoration.
+
+**Application notes:**
+- Amber is reserved for money/action moments only (price tags, buy/subscribe buttons) — don't overuse it decoratively, or it loses meaning.
+- Teal badges (verified seller, platform compatibility) double as a quick trust-scan for buyers browsing the catalog — critical given the open-marketplace + downloadable-file risk model in §8.
+- Keep surfaces flat — no gradients/glow, since "premium AI product" aesthetics tend to overuse glow effects; flat + generous spacing reads more trustworthy for a marketplace handling real purchases.
+
+
+## 15. Suggested Roadmap
+
+| Phase | Timeline (indicative) | Focus |
+|---|---|---|
+| MVP | Month 1-3 | Core buy/sell flow, payments, basic trust/scan, 1 category focus to start |
+| Phase 2 | Month 4-6 | Versioning, seller analytics, expanded categories, review system maturity |
+| Phase 3 | Month 7+ | Sandbox preview, affiliate program, possible hosted-agent layer |
+
+---
+
+*Next steps: validate commission %, license structure, and MVP category focus (recommend starting narrow — e.g., only n8n + Make workflows — before opening to all platforms, to keep quality control manageable).*
