@@ -1,0 +1,594 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  passwordHash  String?  @map("password_hash") @db.VarChar(255)
+  name          String   @db.VarChar(150)
+  avatarUrl     String?  @map("avatar_url") @db.VarChar(500)
+  bio           String?  @db.Text
+  role          String   @default("buyer") @db.VarChar(20)
+
+  // Seller-specific
+  isSeller          Boolean  @default(false) @map("is_seller")
+  sellerVerified    Boolean  @default(false) @map("seller_verified")
+  sellerTier        String   @default("new") @map("seller_tier") @db.VarChar(20)
+  stripeAccountId   String?  @map("stripe_account_id") @db.VarChar(255)
+  razorpayAccountId String?  @map("razorpay_account_id") @db.VarChar(255)
+  payoutMethod      String?  @map("payout_method") @db.VarChar(50)
+
+  // Auth
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  twoFaEnabled     Boolean  @default(false) @map("two_fa_enabled")
+  twoFaSecret      String?  @map("two_fa_secret") @db.VarChar(255)
+  oauthProvider    String?  @map("oauth_provider") @db.VarChar(50)
+  oauthId          String?  @map("oauth_id") @db.VarChar(255)
+
+  // Preferences
+  notificationPrefs Json @default("{}") @map("notification_prefs")
+
+  // Meta
+  status       String    @default("active") @db.VarChar(20)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  listings          Listing[]        @relation("SellerListings")
+  approvedListings  Listing[]        @relation("ApprovedBy")
+  purchasesAsBuyer  Purchase[]       @relation("BuyerPurchases")
+  purchasesAsSeller Purchase[]       @relation("SellerPurchases")
+  reviews           Review[]
+  disputesAsBuyer   Dispute[]        @relation("BuyerDisputes")
+  disputesAsSeller  Dispute[]        @relation("SellerDisputes")
+  disputeMessages   DisputeMessage[]
+  resolvedDisputes  Dispute[]        @relation("ResolvedBy")
+  payouts           Payout[]
+  notifications     Notification[]
+  downloads         Download[]
+  subscriptions     Subscription[]
+  auditLogs         AdminAuditLog[]
+  listingViews      ListingView[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// CATEGORIES
+// ─────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  icon        String?  @db.VarChar(50)
+  parentId    String?  @map("parent_id") @db.Uuid
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  listings Listing[]
+
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────
+// PLATFORMS
+// ─────────────────────────────────────────────
+
+model Platform {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(100)
+  iconUrl   String?  @map("icon_url") @db.VarChar(500)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  listings ListingPlatform[]
+
+  @@map("platforms")
+}
+
+// ─────────────────────────────────────────────
+// LISTINGS
+// ─────────────────────────────────────────────
+
+model Listing {
+  id                String  @id @default(uuid()) @db.Uuid
+  sellerId          String  @map("seller_id") @db.Uuid
+  
+  // Content
+  title             String  @db.VarChar(100)
+  slug              String  @unique @db.VarChar(150)
+  description       String  @db.Text
+  usageDescription  String  @map("usage_description") @db.Text
+  setupGuide        String  @map("setup_guide") @db.Text
+  requiredApiKeys   Json    @map("required_api_keys")
+  tags              String[]
+
+  // Relations
+  categoryId        String  @map("category_id") @db.Uuid
+
+  // Pricing
+  priceAmount       Decimal @map("price_amount") @db.Decimal(10, 2)
+  priceCurrency     String  @default("USD") @map("price_currency") @db.VarChar(3)
+  subscriptionPrice Decimal? @map("subscription_price") @db.Decimal(10, 2)
+  licenseTypes      Json    @default("[{\"type\":\"personal\",\"multiplier\":1}]") @map("license_types")
+
+  // File
+  fileUrl           String? @map("file_url") @db.VarChar(500)
+  fileSizeBytes     BigInt? @map("file_size_bytes")
+  fileHash          String? @map("file_hash") @db.VarChar(64)
+  currentVersion    String  @default("1.0.0") @map("current_version") @db.VarChar(20)
+
+  // Metrics (denormalized)
+  totalSales        Int     @default(0) @map("total_sales")
+  totalViews        Int     @default(0) @map("total_views")
+  avgRating         Decimal @default(0) @map("avg_rating") @db.Decimal(3, 2)
+  totalReviews      Int     @default(0) @map("total_reviews")
+
+  // Status
+  status            String  @default("draft") @db.VarChar(20)
+  rejectionReason   String? @map("rejection_reason") @db.Text
+  approvedAt        DateTime? @map("approved_at")
+  approvedById      String?   @map("approved_by") @db.Uuid
+
+  // Scan
+  scanStatus        String  @default("pending") @map("scan_status") @db.VarChar(20)
+  scanResults       Json    @default("{}") @map("scan_results")
+
+  // SEO
+  metaTitle         String? @map("meta_title") @db.VarChar(70)
+  metaDescription   String? @map("meta_description") @db.VarChar(160)
+
+  // Featured
+  featured          Boolean   @default(false)
+  featuredUntil     DateTime? @map("featured_until")
+
+  // Meta
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  publishedAt       DateTime? @map("published_at")
+
+  // Relations
+  seller            User            @relation("SellerListings", fields: [sellerId], references: [id])
+  approvedBy        User?           @relation("ApprovedBy", fields: [approvedById], references: [id])
+  category          Category        @relation(fields: [categoryId], references: [id])
+  platforms         ListingPlatform[]
+  versions          ListingVersion[]
+  media             ListingMedia[]
+  purchases         Purchase[]
+  reviews           Review[]
+  subscriptions     Subscription[]
+  downloads         Download[]
+  views             ListingView[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([priceAmount])
+  @@index([avgRating(sort: Desc)])
+  @@index([tags])
+  @@map("listings")
+}
+
+// ─────────────────────────────────────────────
+// LISTING PLATFORMS (M2M)
+// ─────────────────────────────────────────────
+
+model ListingPlatform {
+  listingId  String @map("listing_id") @db.Uuid
+  platformId String @map("platform_id") @db.Uuid
+
+  listing  Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id])
+
+  @@id([listingId, platformId])
+  @@map("listing_platforms")
+}
+
+// ─────────────────────────────────────────────
+// LISTING VERSIONS
+// ─────────────────────────────────────────────
+
+model ListingVersion {
+  id             String   @id @default(uuid()) @db.Uuid
+  listingId      String   @map("listing_id") @db.Uuid
+  versionNumber  String   @map("version_number") @db.VarChar(20)
+  changelog      String?  @db.Text
+  fileUrl        String   @map("file_url") @db.VarChar(500)
+  fileSizeBytes  BigInt?  @map("file_size_bytes")
+  fileHash       String?  @map("file_hash") @db.VarChar(64)
+  scanStatus     String   @default("pending") @map("scan_status") @db.VarChar(20)
+  scanResults    Json     @default("{}") @map("scan_results")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  listing   Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+  downloads Download[]
+
+  @@unique([listingId, versionNumber])
+  @@index([listingId])
+  @@map("listing_versions")
+}
+
+// ─────────────────────────────────────────────
+// LISTING MEDIA
+// ─────────────────────────────────────────────
+
+model ListingMedia {
+  id           String   @id @default(uuid()) @db.Uuid
+  listingId    String   @map("listing_id") @db.Uuid
+  type         String   @db.VarChar(20) // 'screenshot', 'video', 'diagram'
+  url          String   @db.VarChar(500)
+  thumbnailUrl String?  @map("thumbnail_url") @db.VarChar(500)
+  sortOrder    Int      @default(0) @map("sort_order")
+  altText      String?  @map("alt_text") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_media")
+}
+
+// ─────────────────────────────────────────────
+// PURCHASES
+// ─────────────────────────────────────────────
+
+model Purchase {
+  id                 String  @id @default(uuid()) @db.Uuid
+  buyerId            String  @map("buyer_id") @db.Uuid
+  listingId          String  @map("listing_id") @db.Uuid
+  sellerId           String  @map("seller_id") @db.Uuid
+  versionId          String? @map("version_id") @db.Uuid
+
+  // Payment
+  amount             Decimal @db.Decimal(10, 2)
+  currency           String  @default("USD") @db.VarChar(3)
+  licenseType        String  @default("personal") @map("license_type") @db.VarChar(20)
+  paymentGateway     String  @map("payment_gateway") @db.VarChar(20)
+  gatewayPaymentId   String? @map("gateway_payment_id") @db.VarChar(255)
+  gatewayChargeId    String? @map("gateway_charge_id") @db.VarChar(255)
+
+  // Commission
+  platformCommission Decimal @map("platform_commission") @db.Decimal(10, 2)
+  commissionRate     Decimal @map("commission_rate") @db.Decimal(5, 4)
+  sellerEarnings     Decimal @map("seller_earnings") @db.Decimal(10, 2)
+  gatewayFee         Decimal @default(0) @map("gateway_fee") @db.Decimal(10, 2)
+
+  // Subscription
+  hasSubscription    Boolean       @default(false) @map("has_subscription")
+  subscriptionId     String?       @map("subscription_id") @db.Uuid
+
+  // Status
+  status             String  @default("completed") @db.VarChar(20)
+
+  // Download tracking
+  downloadCount      Int       @default(0) @map("download_count")
+  lastDownloadedAt   DateTime? @map("last_downloaded_at")
+  downloadAccess     Boolean   @default(true) @map("download_access")
+
+  // Meta
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  buyer        User            @relation("BuyerPurchases", fields: [buyerId], references: [id])
+  listing      Listing         @relation(fields: [listingId], references: [id])
+  seller       User            @relation("SellerPurchases", fields: [sellerId], references: [id])
+  version      ListingVersion? @relation(fields: [versionId], references: [id])
+  subscription Subscription?   @relation(fields: [subscriptionId], references: [id])
+  reviews      Review[]
+  disputes     Dispute[]
+  downloads    Download[]
+
+  @@index([buyerId])
+  @@index([listingId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("purchases")
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIPTIONS
+// ─────────────────────────────────────────────
+
+model Subscription {
+  id                     String    @id @default(uuid()) @db.Uuid
+  buyerId                String    @map("buyer_id") @db.Uuid
+  listingId              String    @map("listing_id") @db.Uuid
+
+  // Billing
+  amount                 Decimal   @db.Decimal(10, 2)
+  currency               String    @default("USD") @db.VarChar(3)
+  billingCycle            String    @default("monthly") @map("billing_cycle") @db.VarChar(20)
+  gatewaySubscriptionId  String?   @map("gateway_subscription_id") @db.VarChar(255)
+
+  // Status
+  status                 String    @default("active") @db.VarChar(20)
+  currentPeriodStart     DateTime? @map("current_period_start")
+  currentPeriodEnd       DateTime? @map("current_period_end")
+  cancelledAt            DateTime? @map("cancelled_at")
+
+  // Retry
+  failedPayments         Int       @default(0) @map("failed_payments")
+  lastPaymentAttempt     DateTime? @map("last_payment_attempt")
+
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  buyer     User       @relation(fields: [buyerId], references: [id])
+  listing   Listing    @relation(fields: [listingId], references: [id])
+  purchases Purchase[]
+
+  @@index([buyerId])
+  @@index([listingId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ─────────────────────────────────────────────
+// DOWNLOADS
+// ─────────────────────────────────────────────
+
+model Download {
+  id         String   @id @default(uuid()) @db.Uuid
+  purchaseId String   @map("purchase_id") @db.Uuid
+  buyerId    String   @map("buyer_id") @db.Uuid
+  listingId  String   @map("listing_id") @db.Uuid
+  versionId  String?  @map("version_id") @db.Uuid
+
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  fileHash   String?  @map("file_hash") @db.VarChar(64)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  purchase Purchase       @relation(fields: [purchaseId], references: [id])
+  buyer    User           @relation(fields: [buyerId], references: [id])
+  listing  Listing        @relation(fields: [listingId], references: [id])
+  version  ListingVersion? @relation(fields: [versionId], references: [id])
+
+  @@index([purchaseId])
+  @@index([buyerId])
+  @@map("downloads")
+}
+
+// ─────────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────────
+
+model Review {
+  id                 String    @id @default(uuid()) @db.Uuid
+  purchaseId         String    @unique @map("purchase_id") @db.Uuid
+  buyerId            String    @map("buyer_id") @db.Uuid
+  listingId          String    @map("listing_id") @db.Uuid
+
+  rating             Int       @db.SmallInt
+  title              String?   @db.VarChar(200)
+  body               String?   @db.Text
+
+  // Seller response
+  sellerResponse     String?   @map("seller_response") @db.Text
+  sellerRespondedAt  DateTime? @map("seller_responded_at")
+
+  // Moderation
+  isVerifiedPurchase Boolean   @default(true) @map("is_verified_purchase")
+  isFlagged          Boolean   @default(false) @map("is_flagged")
+  status             String    @default("published") @db.VarChar(20)
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  purchase Purchase @relation(fields: [purchaseId], references: [id])
+  buyer    User     @relation(fields: [buyerId], references: [id])
+  listing  Listing  @relation(fields: [listingId], references: [id])
+
+  @@index([listingId])
+  @@index([buyerId])
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// DISPUTES
+// ─────────────────────────────────────────────
+
+model Dispute {
+  id              String    @id @default(uuid()) @db.Uuid
+  purchaseId      String    @map("purchase_id") @db.Uuid
+  buyerId         String    @map("buyer_id") @db.Uuid
+  sellerId        String    @map("seller_id") @db.Uuid
+
+  reason          String    @db.VarChar(50)
+  description     String    @db.Text
+
+  // Resolution
+  status          String    @default("open") @db.VarChar(20)
+  resolutionNote  String?   @map("resolution_note") @db.Text
+  resolvedById    String?   @map("resolved_by") @db.Uuid
+  resolvedAt      DateTime? @map("resolved_at")
+
+  // Auto-escalation
+  escalatedAt     DateTime? @map("escalated_at")
+  autoEscalateAt  DateTime? @map("auto_escalate_at")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  purchase  Purchase         @relation(fields: [purchaseId], references: [id])
+  buyer     User             @relation("BuyerDisputes", fields: [buyerId], references: [id])
+  seller    User             @relation("SellerDisputes", fields: [sellerId], references: [id])
+  resolvedBy User?           @relation("ResolvedBy", fields: [resolvedById], references: [id])
+  messages  DisputeMessage[]
+
+  @@index([purchaseId])
+  @@index([status])
+  @@index([sellerId])
+  @@map("disputes")
+}
+
+// ─────────────────────────────────────────────
+// DISPUTE MESSAGES
+// ─────────────────────────────────────────────
+
+model DisputeMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  disputeId  String   @map("dispute_id") @db.Uuid
+  senderId   String   @map("sender_id") @db.Uuid
+  senderRole String   @map("sender_role") @db.VarChar(20)
+  message    String   @db.Text
+  attachments Json    @default("[]")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  sender  User    @relation(fields: [senderId], references: [id])
+
+  @@index([disputeId])
+  @@map("dispute_messages")
+}
+
+// ─────────────────────────────────────────────
+// PAYOUTS
+// ─────────────────────────────────────────────
+
+model Payout {
+  id               String    @id @default(uuid()) @db.Uuid
+  sellerId         String    @map("seller_id") @db.Uuid
+
+  amount           Decimal   @db.Decimal(10, 2)
+  currency         String    @default("USD") @db.VarChar(3)
+  payoutMethod     String    @map("payout_method") @db.VarChar(20)
+  gatewayPayoutId  String?   @map("gateway_payout_id") @db.VarChar(255)
+
+  // Period
+  periodStart      DateTime  @map("period_start") @db.Date
+  periodEnd        DateTime  @map("period_end") @db.Date
+
+  // Breakdown
+  totalSalesAmount Decimal?  @map("total_sales_amount") @db.Decimal(10, 2)
+  totalCommission  Decimal?  @map("total_commission") @db.Decimal(10, 2)
+  totalRefunds     Decimal?  @map("total_refunds") @db.Decimal(10, 2)
+  netAmount        Decimal   @map("net_amount") @db.Decimal(10, 2)
+
+  // Status
+  status           String    @default("pending") @db.VarChar(20)
+  processedAt      DateTime? @map("processed_at")
+  failureReason    String?   @map("failure_reason") @db.Text
+
+  // Invoice
+  invoiceUrl       String?   @map("invoice_url") @db.VarChar(500)
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  seller User @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("payouts")
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+
+  type      String    @db.VarChar(50)
+  title     String    @db.VarChar(200)
+  body      String?   @db.Text
+  data      Json      @default("{}")
+  link      String?   @db.VarChar(500)
+
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────
+// ADMIN AUDIT LOGS
+// ─────────────────────────────────────────────
+
+model AdminAuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  adminId    String   @map("admin_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  targetType String?  @map("target_type") @db.VarChar(50)
+  targetId   String?  @map("target_id") @db.Uuid
+  details    Json     @default("{}")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@map("admin_audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// LISTING VIEWS (Analytics)
+// ─────────────────────────────────────────────
+
+model ListingView {
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  viewerId  String?  @map("viewer_id") @db.Uuid
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  referrer  String?  @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  listing Listing @relation(fields: [listingId], references: [id])
+  viewer  User?   @relation(fields: [viewerId], references: [id])
+
+  @@index([listingId])
+  @@index([createdAt])
+  @@map("listing_views")
+}

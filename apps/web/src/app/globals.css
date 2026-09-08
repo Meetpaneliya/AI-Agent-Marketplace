@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+/* ─── AgentStore Design Tokens ─── */
+@theme inline {
+  /* Colors */
+  --color-void: #0B0E14;
+  --color-panel: #141B26;
+  --color-surface: #1A2332;
+  --color-ledger: #1F2733;
+  --color-signal: #E8A33D;
+  --color-signal-hover: #D4922E;
+  --color-circuit: #3FC7B0;
+  --color-circuit-hover: #35B09C;
+  --color-text-primary: #EDEFF4;
+  --color-text-secondary: #B8BEC9;
+  --color-text-muted: #8891A0;
+  --color-danger: #E2554C;
+  --color-danger-hover: #CB4A42;
+  --color-warning: #E8C33D;
+  --color-success: #3FC77B;
+
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+
+/* ─── Base Styles ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ledger) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-ledger);
+  border-radius: var(--radius-full);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+html {
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+}
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-circuit);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-circuit-hover);
+}
+
+/* ─── Code / Technical Text ─── */
+code, pre, .font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background-color: rgba(232, 163, 61, 0.3);
+  color: var(--color-text-primary);
+}
+
+/* ─── Focus Ring ─── */
+*:focus-visible {
+  outline: 2px solid var(--color-circuit);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Transitions ─── */
+button, a, input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* ─── Skeleton Loading ─── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-panel) 25%,
+    var(--color-surface) 50%,
+    var(--color-panel) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}

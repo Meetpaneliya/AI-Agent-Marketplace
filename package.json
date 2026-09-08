@@ -1,0 +1,31 @@
+{
+  "name": "agentstore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Agent Marketplace — The ThemeForest of AI Agents",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "db:generate": "yarn workspace api prisma:generate",
+    "db:migrate": "yarn workspace api prisma:migrate",
+    "db:seed": "yarn workspace api prisma:seed",
+    "db:studio": "yarn workspace api prisma:studio",
+    "db:push": "yarn workspace api prisma:push",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0"
+  },
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
