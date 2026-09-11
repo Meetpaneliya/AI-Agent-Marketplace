@@ -2,26 +2,39 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
+import { loginUser } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // TODO: Integrate with NextAuth
-    setTimeout(() => {
+    try {
+      const data = await loginUser(email.trim(), password);
+      const userRole = (data.user.role || "").toUpperCase();
+      if (userRole === "SELLER" || data.user.isSeller) {
+        router.push("/seller");
+      } else if (userRole === "ADMIN") {
+        router.push("/seller");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to log in. Please check your credentials.");
+    } finally {
       setLoading(false);
-      setError("Authentication not yet configured. Coming soon!");
-    }, 1500);
+    }
   };
 
   return (
@@ -38,7 +51,8 @@ export default function LoginPage() {
       {/* Google OAuth Button */}
       <button
         type="button"
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-surface border border-ledger text-text-primary text-sm font-medium hover:bg-ledger transition-colors mb-6"
+        onClick={() => setError("Google OAuth credentials will be active once credentials are provided in .env")}
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-surface border border-ledger text-text-primary text-sm font-medium hover:bg-ledger transition-colors mb-6 cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -61,11 +75,12 @@ export default function LoginPage() {
         <Input
           label="Email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="you@company.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <Input
           label="Password"
           type="password"
@@ -88,24 +103,27 @@ export default function LoginPage() {
           </label>
           <Link
             href="/forgot-password"
-            className="text-sm text-circuit hover:text-circuit-hover transition-colors"
+            className="text-sm text-signal hover:underline"
           >
             Forgot password?
           </Link>
         </div>
 
-        <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={loading}
+        >
           Log In
         </Button>
       </form>
 
-      {/* Register Link */}
-      <p className="text-sm text-text-muted text-center mt-6">
+      {/* Footer */}
+      <p className="text-center text-sm text-text-muted mt-6">
         Don&apos;t have an account?{" "}
-        <Link
-          href="/register"
-          className="text-signal hover:text-signal-hover font-medium transition-colors"
-        >
+        <Link href="/register" className="text-circuit hover:underline font-medium">
           Create one
         </Link>
       </p>

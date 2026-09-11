@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireRole } from "../middleware/auth";
 
 const SAMPLE_AGENTS = [
   {
@@ -173,7 +173,7 @@ export async function agentRoutes(server: FastifyInstance) {
   });
 
   // POST /v1/agents
-  server.post("/agents", { preHandler: [requireAuth] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  server.post("/agents", { preHandler: [requireRole(["SELLER", "ADMIN"])] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const parsed = createListingSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({

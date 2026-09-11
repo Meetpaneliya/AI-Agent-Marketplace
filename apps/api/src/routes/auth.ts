@@ -9,6 +9,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().min(2),
+  role: z.enum(["BUYER", "SELLER"]).optional(),
   isSeller: z.boolean().optional(),
 });
 
@@ -33,7 +34,9 @@ export async function authRoutes(server: FastifyInstance) {
         });
       }
 
-      const { email, password, name, isSeller } = parsed.data;
+      const { email, password, name } = parsed.data;
+      const targetRole = parsed.data.role || (parsed.data.isSeller ? "SELLER" : "BUYER");
+      const isSeller = targetRole === "SELLER";
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -57,20 +60,9 @@ export async function authRoutes(server: FastifyInstance) {
           email: email.toLowerCase(),
           passwordHash,
           name,
-          role: isSeller ? "seller" : "buyer",
-          isSeller: Boolean(isSeller),
+          role: targetRole as any,
+          isSeller,
         },
-      }).catch((err: any) => {
-        // Fallback for when Postgres is in dev/unmigrated mode
-        server.log.warn({ err }, "DB create failed, simulating registration");
-        return {
-          id: "dev-user-" + Date.now(),
-          email: email.toLowerCase(),
-          name,
-          role: isSeller ? "seller" : "buyer",
-          isSeller: Boolean(isSeller),
-          createdAt: new Date(),
-        };
       });
 
       const token = signToken({
@@ -226,13 +218,47 @@ export async function authRoutes(server: FastifyInstance) {
     });
   });
 
-  // POST /v1/auth/reset-password
-  server.post("/reset-password", async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.send({
-      success: true,
-      data: {
-        message: "Your password has been successfully reset.",
-      },
-    });
+  // POST /v1/auth/upgrade-to-seller
+  server.post("/upgrade-to-seller", { preHandler: [requireAuth] }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = request.user?.userId;
+      if (!userId) {
+        return reply.status(401).send({ success: false, error: { message: "Unauthorized" } });
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          role: "SELLER" as any,
+          isSeller: true,
+        },
+      });
+
+      const token = signToken({
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      });
+
+      return reply.send({
+        success: true,
+        data: {
+          user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            name: updatedUser.name,
+            role: updatedUser.role,
+            isSeller: updatedUser.isSeller,
+          },
+          token,
+        },
+      });
+    } catch (err: any) {
+      server.log.error(err);
+      return reply.status(500).send({
+        success: false,
+        error: { code: "INTERNAL_ERROR", message: "Failed to upgrade account to seller" },
+      });
+    }
   });
 }

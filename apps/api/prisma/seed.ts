@@ -55,16 +55,49 @@ async function main() {
   console.log("👑 Creating super admin account...");
   await prisma.user.upsert({
     where: { email: "admin@agentstore.com" },
-    update: {},
+    update: { role: "ADMIN" as any },
     create: {
       email: "admin@agentstore.com",
-      passwordHash: "$2a$12$LJ3hXFXkP6Z6Y7Md7n0VKetqKN/dZs4bRwGmGZ3j7f7cDjH1GE.3K", // "admin123" hashed
+      passwordHash: "$2a$12$LJ3hXFXkP6Z6Y7Md7n0VKetqKN/dZs4bRwGmGZ3j7f7cDjH1GE.3K", // "admin123"
       name: "AgentStore Admin",
-      role: "super_admin",
+      role: "ADMIN" as any,
       emailVerified: true,
     },
   });
-  console.log("   ✅ Super admin created (admin@agentstore.com)\n");
+  console.log("   ✅ Super admin created (admin@agentstore.com / admin123)\n");
+
+  // ─── Demo Seller ───
+  console.log("⚡ Creating demo seller account...");
+  await prisma.user.upsert({
+    where: { email: "developer@agentstore.com" },
+    update: { role: "SELLER" as any, isSeller: true },
+    create: {
+      email: "developer@agentstore.com",
+      passwordHash: "$2a$12$R.7E0pXk7Jt6dF6dYvMh5.7xZ91tV5xLzY10F.7e8eXm6zX2K6lGe", // "SuperPassword123"
+      name: "Nexus Automation Labs (Seller)",
+      role: "SELLER" as any,
+      isSeller: true,
+      sellerVerified: true,
+      emailVerified: true,
+    },
+  });
+  console.log("   ✅ Demo seller created (developer@agentstore.com / SuperPassword123)\n");
+
+  // ─── Demo Buyer ───
+  console.log("🛒 Creating demo buyer account...");
+  await prisma.user.upsert({
+    where: { email: "buyer@agentstore.com" },
+    update: { role: "BUYER" as any, isSeller: false },
+    create: {
+      email: "buyer@agentstore.com",
+      passwordHash: "$2a$12$R.7E0pXk7Jt6dF6dYvMh5.7xZ91tV5xLzY10F.7e8eXm6zX2K6lGe", // "SuperPassword123"
+      name: "Amit Patel (Buyer)",
+      role: "BUYER" as any,
+      isSeller: false,
+      emailVerified: true,
+    },
+  });
+  console.log("   ✅ Demo buyer created (buyer@agentstore.com / SuperPassword123)\n");
 
   console.log("🎉 Database seeding completed!");
 }

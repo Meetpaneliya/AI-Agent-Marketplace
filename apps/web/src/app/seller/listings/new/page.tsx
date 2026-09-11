@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Navbar, Footer } from "@/components/layout";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -92,11 +91,8 @@ export default function CreateListingPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-void py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Breadcrumb & Navigation */}
+    <div className="max-w-4xl mx-auto py-2 animate-fade-in">
+      {/* Breadcrumb & Navigation */}
           <div className="flex items-center gap-2 text-sm text-text-muted mb-6">
             <Link href="/seller" className="hover:text-text-primary transition-colors">
               Seller Dashboard
@@ -522,9 +518,6 @@ export default function CreateListingPage() {
               </div>
             </form>
           )}
-        </div>
-      </main>
-      <Footer />
-    </>
+    </div>
   );
 }

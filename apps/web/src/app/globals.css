@@ -1,23 +1,32 @@
 @import "tailwindcss";
 
-/* ─── AgentStore Design Tokens ─── */
+/* ─── Linear / Raycast Design Tokens ─── */
 @theme inline {
-  /* Colors */
-  --color-void: #0B0E14;
-  --color-panel: #141B26;
-  --color-surface: #1A2332;
-  --color-ledger: #1F2733;
-  --color-signal: #E8A33D;
-  --color-signal-hover: #D4922E;
-  --color-circuit: #3FC7B0;
-  --color-circuit-hover: #35B09C;
-  --color-text-primary: #EDEFF4;
-  --color-text-secondary: #B8BEC9;
-  --color-text-muted: #8891A0;
-  --color-danger: #E2554C;
-  --color-danger-hover: #CB4A42;
-  --color-warning: #E8C33D;
-  --color-success: #3FC77B;
+  /* Neutral Obsidian Dark Base (no weird navy tint) */
+  --color-void: #090A0F;
+  --color-panel: #11131A;
+  --color-surface: #171923;
+  --color-ledger: #222533;
+  --color-ledger-hover: #2D3142;
+
+  /* Primary Accent: Crisp Electric Indigo (Linear style) */
+  --color-signal: #6366F1;
+  --color-signal-hover: #4F46E5;
+
+  /* Secondary Accent: Electric Violet / Purple */
+  --color-circuit: #8B5CF6;
+  --color-circuit-hover: #7C3AED;
+
+  /* Neutral High-Contrast Typography */
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  /* Status Colors */
+  --color-danger: #F43F5E;
+  --color-danger-hover: #E11D48;
+  --color-warning: #F59E0B;
+  --color-success: #10B981;
 
   /* Fonts */
   --font-sans: var(--font-inter);
@@ -85,13 +94,13 @@ p {
   line-height: 1.6;
 }
 
-a {
+a:not([class*="text-"]) {
   color: var(--color-circuit);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-a:hover {
+a:not([class*="text-"]):hover {
   color: var(--color-circuit-hover);
 }
 
@@ -102,13 +111,13 @@ code, pre, .font-mono {
 
 /* ─── Selection ─── */
 ::selection {
-  background-color: rgba(232, 163, 61, 0.3);
+  background-color: rgba(99, 102, 241, 0.35);
   color: var(--color-text-primary);
 }
 
 /* ─── Focus Ring ─── */
 *:focus-visible {
-  outline: 2px solid var(--color-circuit);
+  outline: 2px solid var(--color-signal);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }

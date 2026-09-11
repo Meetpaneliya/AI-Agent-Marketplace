@@ -2,7 +2,7 @@
   "name": "agentstore",
   "version": "1.0.0",
   "private": true,
-  "description": "AI Agent Marketplace — The ThemeForest of AI Agents",
+  "description": "AI Agent Marketplace",
   "workspaces": [
     "apps/*",
     "packages/*"

@@ -41,8 +41,9 @@ export default function Footer() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-text-primary">
-                Agent<span className="text-signal">Store</span>
+              <span className="text-lg font-bold">
+                <span className="text-text-primary">Agent</span>
+                <span className="text-signal ml-1">Store</span>
               </span>
             </Link>
             <p className="text-sm text-text-muted leading-relaxed">
