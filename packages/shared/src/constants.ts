@@ -18,16 +18,27 @@ export const SELLER_TIERS = {
 export type SellerTier = (typeof SELLER_TIERS)[keyof typeof SELLER_TIERS];
 
 // ─── Listing Status ───
+export enum ListingStatus {
+  DRAFT = "DRAFT",
+  PENDING_REVIEW = "PENDING_REVIEW",
+  PUBLISHED = "PUBLISHED",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  SUSPENDED = "SUSPENDED",
+  ARCHIVED = "ARCHIVED",
+}
+
 export const LISTING_STATUS = {
   DRAFT: "draft",
   PENDING_REVIEW: "pending_review",
+  PUBLISHED: "published",
   APPROVED: "approved",
   REJECTED: "rejected",
   SUSPENDED: "suspended",
   ARCHIVED: "archived",
 } as const;
 
-export type ListingStatus =
+export type ListingStatusType =
   (typeof LISTING_STATUS)[keyof typeof LISTING_STATUS];
 
 // ─── Scan Status ───

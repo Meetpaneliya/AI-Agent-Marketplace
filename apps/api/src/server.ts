@@ -69,8 +69,22 @@ const start = async () => {
   try {
     // ─── Plugins ───
     await server.register(cors, {
-      origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      origin: (origin, cb) => {
+        // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+        if (!origin) return cb(null, true);
+        // Allow any localhost / 127.0.0.1 port or configured APP URL
+        if (
+          origin.includes("localhost") ||
+          origin.includes("127.0.0.1") ||
+          origin === process.env.NEXT_PUBLIC_APP_URL
+        ) {
+          return cb(null, true);
+        }
+        return cb(null, false);
+      },
       credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
     });
 
     await server.register(helmet, {

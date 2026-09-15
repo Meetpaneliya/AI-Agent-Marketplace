@@ -55,10 +55,13 @@ async function main() {
   console.log("👑 Creating super admin account...");
   await prisma.user.upsert({
     where: { email: "admin@agentstore.com" },
-    update: { role: "ADMIN" as any },
+    update: {
+      role: "ADMIN" as any,
+      passwordHash: "$2a$10$zpHUO9PPOicyOoXVcdxPXO3BDiMQkQM5kCUVJvVo4XU4oMEh8lWvC", // "admin123"
+    },
     create: {
       email: "admin@agentstore.com",
-      passwordHash: "$2a$12$LJ3hXFXkP6Z6Y7Md7n0VKetqKN/dZs4bRwGmGZ3j7f7cDjH1GE.3K", // "admin123"
+      passwordHash: "$2a$10$zpHUO9PPOicyOoXVcdxPXO3BDiMQkQM5kCUVJvVo4XU4oMEh8lWvC", // "admin123"
       name: "AgentStore Admin",
       role: "ADMIN" as any,
       emailVerified: true,
@@ -70,10 +73,14 @@ async function main() {
   console.log("⚡ Creating demo seller account...");
   await prisma.user.upsert({
     where: { email: "developer@agentstore.com" },
-    update: { role: "SELLER" as any, isSeller: true },
+    update: {
+      role: "SELLER" as any,
+      isSeller: true,
+      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+    },
     create: {
       email: "developer@agentstore.com",
-      passwordHash: "$2a$12$R.7E0pXk7Jt6dF6dYvMh5.7xZ91tV5xLzY10F.7e8eXm6zX2K6lGe", // "SuperPassword123"
+      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
       name: "Nexus Automation Labs (Seller)",
       role: "SELLER" as any,
       isSeller: true,
@@ -87,10 +94,14 @@ async function main() {
   console.log("🛒 Creating demo buyer account...");
   await prisma.user.upsert({
     where: { email: "buyer@agentstore.com" },
-    update: { role: "BUYER" as any, isSeller: false },
+    update: {
+      role: "BUYER" as any,
+      isSeller: false,
+      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+    },
     create: {
       email: "buyer@agentstore.com",
-      passwordHash: "$2a$12$R.7E0pXk7Jt6dF6dYvMh5.7xZ91tV5xLzY10F.7e8eXm6zX2K6lGe", // "SuperPassword123"
+      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
       name: "Amit Patel (Buyer)",
       role: "BUYER" as any,
       isSeller: false,

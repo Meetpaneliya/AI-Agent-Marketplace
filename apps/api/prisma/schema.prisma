@@ -16,6 +16,16 @@ enum UserRole {
   ADMIN
 }
 
+enum ListingStatus {
+  DRAFT          @map("draft")
+  PENDING_REVIEW @map("pending_review")
+  PUBLISHED      @map("published")
+  APPROVED       @map("approved")
+  REJECTED       @map("rejected")
+  SUSPENDED      @map("suspended")
+  ARCHIVED       @map("archived")
+}
+
 // ─────────────────────────────────────────────
 // USERS
 // ─────────────────────────────────────────────
@@ -155,7 +165,7 @@ model Listing {
   totalReviews      Int     @default(0) @map("total_reviews")
 
   // Status
-  status            String  @default("draft") @db.VarChar(20)
+  status            ListingStatus @default(DRAFT)
   rejectionReason   String? @map("rejection_reason") @db.Text
   approvedAt        DateTime? @map("approved_at")
   approvedById      String?   @map("approved_by") @db.Uuid

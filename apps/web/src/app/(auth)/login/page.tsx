@@ -120,6 +120,51 @@ export default function LoginPage() {
         </Button>
       </form>
 
+      {/* Quick Demo Accounts Helper */}
+      <div className="mt-6 pt-5 border-t border-ledger">
+        <div className="text-xs text-text-muted font-medium mb-2.5 text-center">
+          Quick Demo Accounts (1-Click Fill)
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("admin@agentstore.com");
+              setPassword("admin123");
+              setError("");
+            }}
+            className="p-2 rounded-lg bg-surface border border-ledger hover:border-signal/50 hover:bg-ledger/40 text-center transition-all cursor-pointer group"
+          >
+            <div className="font-semibold text-text-primary group-hover:text-signal">👑 Admin</div>
+            <div className="text-[10px] text-text-muted truncate">admin123</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("developer@agentstore.com");
+              setPassword("SuperPassword123");
+              setError("");
+            }}
+            className="p-2 rounded-lg bg-surface border border-ledger hover:border-signal/50 hover:bg-ledger/40 text-center transition-all cursor-pointer group"
+          >
+            <div className="font-semibold text-text-primary group-hover:text-signal">⚡ Seller</div>
+            <div className="text-[10px] text-text-muted truncate">SuperPassword</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("buyer@agentstore.com");
+              setPassword("SuperPassword123");
+              setError("");
+            }}
+            className="p-2 rounded-lg bg-surface border border-ledger hover:border-signal/50 hover:bg-ledger/40 text-center transition-all cursor-pointer group"
+          >
+            <div className="font-semibold text-text-primary group-hover:text-signal">🛒 Buyer</div>
+            <div className="text-[10px] text-text-muted truncate">SuperPassword</div>
+          </button>
+        </div>
+      </div>
+
       {/* Footer */}
       <p className="text-center text-sm text-text-muted mt-6">
         Don&apos;t have an account?{" "}

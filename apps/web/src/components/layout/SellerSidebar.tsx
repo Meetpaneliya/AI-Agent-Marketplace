@@ -166,6 +166,35 @@ export default function SellerSidebar({ mobileOpen = false, onClose }: SellerSid
             </Link>
           ))}
 
+          {/* Admin Review Console Section (Only for Admin Role) */}
+          {user?.role === "ADMIN" && (
+            <div className="pt-4 pb-1">
+              <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-circuit flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-circuit animate-pulse" />
+                Admin Console
+              </div>
+              <Link
+                href="/seller?tab=admin_reviews"
+                onClick={onClose}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  pathname === "/seller" && currentTab === "admin_reviews"
+                    ? "bg-circuit/15 text-circuit border border-circuit/30 font-semibold"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface/80"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-circuit" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                  <span>Review Queue</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-circuit/20 text-circuit">
+                  Admin
+                </span>
+              </Link>
+            </div>
+          )}
+
           {/* Secondary Section */}
           <div className="pt-6 px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
             Explore
