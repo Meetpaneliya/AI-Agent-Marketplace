@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -53,15 +54,16 @@ async function main() {
 
   // ─── Super Admin ───
   console.log("👑 Creating super admin account...");
+  const adminHash = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({
     where: { email: "admin@agentstore.com" },
     update: {
       role: "ADMIN" as any,
-      passwordHash: "$2a$10$zpHUO9PPOicyOoXVcdxPXO3BDiMQkQM5kCUVJvVo4XU4oMEh8lWvC", // "admin123"
+      passwordHash: adminHash,
     },
     create: {
       email: "admin@agentstore.com",
-      passwordHash: "$2a$10$zpHUO9PPOicyOoXVcdxPXO3BDiMQkQM5kCUVJvVo4XU4oMEh8lWvC", // "admin123"
+      passwordHash: adminHash,
       name: "AgentStore Admin",
       role: "ADMIN" as any,
       emailVerified: true,
@@ -71,16 +73,17 @@ async function main() {
 
   // ─── Demo Seller ───
   console.log("⚡ Creating demo seller account...");
+  const sellerHash = await bcrypt.hash("SuperPassword123", 10);
   await prisma.user.upsert({
     where: { email: "developer@agentstore.com" },
     update: {
       role: "SELLER" as any,
       isSeller: true,
-      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+      passwordHash: sellerHash,
     },
     create: {
       email: "developer@agentstore.com",
-      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+      passwordHash: sellerHash,
       name: "Nexus Automation Labs (Seller)",
       role: "SELLER" as any,
       isSeller: true,
@@ -92,16 +95,17 @@ async function main() {
 
   // ─── Demo Buyer ───
   console.log("🛒 Creating demo buyer account...");
+  const buyerHash = await bcrypt.hash("SuperPassword123", 10);
   await prisma.user.upsert({
     where: { email: "buyer@agentstore.com" },
     update: {
       role: "BUYER" as any,
       isSeller: false,
-      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+      passwordHash: buyerHash,
     },
     create: {
       email: "buyer@agentstore.com",
-      passwordHash: "$2a$10$Gxu.3TI4ZiPVcdOChN8gzuUMu19rA3uaICoUmxsCtn3xnW73k/qVK", // "SuperPassword123"
+      passwordHash: buyerHash,
       name: "Amit Patel (Buyer)",
       role: "BUYER" as any,
       isSeller: false,

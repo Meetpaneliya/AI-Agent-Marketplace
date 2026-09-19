@@ -153,6 +153,9 @@ export interface SellerListingItem {
   approvedBy?: string;
   fileUrl?: string;
   scanStatus?: string;
+  scanResults?: any;
+  fileHash?: string;
+  demoUrl?: string;
   version?: string;
   updatedAt?: string;
   createdAt?: string;
@@ -304,6 +307,24 @@ export async function rejectAgentListing(id: string, rejectionReason: string): P
   if (!res.ok || !data.success) {
     throw new Error(data.error?.message || "Failed to reject listing.");
   }
+}
+
+export async function validatePackageFile(fileName: string, fileContent: string): Promise<any> {
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE_URL}/v1/agents/scan-package`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ fileName, fileContent }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error?.message || "Package scan failed.");
+  }
+  return data.data.scan;
 }
 
 

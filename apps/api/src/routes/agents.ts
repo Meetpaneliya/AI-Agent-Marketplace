@@ -4,6 +4,7 @@ import prisma from "../lib/prisma";
 import { ListingStatus } from "@prisma/client";
 import { requireRole } from "../middleware/auth";
 import { verifyToken } from "../lib/jwt";
+import { scanAgentPackage } from "../services/securityScanner";
 
 const SAMPLE_AGENTS = [
   {
@@ -113,10 +114,30 @@ const createListingSchema = z.object({
   setupInstructions: z.string().optional(),
   demoUrl: z.string().optional(),
   fileName: z.string().optional(),
+  fileContent: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
 });
 
 export async function agentRoutes(server: FastifyInstance) {
+  // POST /v1/agents/scan-package — Pre-upload automated security & secret scan (100% Free)
+  server.post("/agents/scan-package", async (request: FastifyRequest, reply: FastifyReply) => {
+    const body = (request.body as any) || {};
+    const fileName = body.fileName || "agent_workflow.json";
+    const fileContent = body.fileContent;
+    const fileSizeBytes = body.fileSizeBytes;
+
+    const scanResult = scanAgentPackage({
+      fileName,
+      fileContent,
+      fileSizeBytes,
+    });
+
+    return reply.send({
+      success: true,
+      data: { scan: scanResult },
+    });
+  });
+
   // GET /v1/agents — Returns published marketplace agents (sample + approved DB listings)
   server.get("/agents", async (request: FastifyRequest, reply: FastifyReply) => {
     const query = request.query as {
@@ -287,6 +308,9 @@ export async function agentRoutes(server: FastifyInstance) {
           rejectionReason: l.rejectionReason,
           approvedAt: l.approvedAt,
           fileUrl: l.fileUrl,
+          fileHash: l.fileHash,
+          scanStatus: l.scanStatus,
+          scanResults: l.scanResults,
           version: l.currentVersion,
           updatedAt: l.updatedAt,
           createdAt: l.createdAt,
@@ -422,6 +446,11 @@ export async function agentRoutes(server: FastifyInstance) {
 
     const isSubscription = data.pricingModel === "subscription";
 
+    const scanResult = scanAgentPackage({
+      fileName: data.fileName || "agent_workflow.json",
+      fileContent: data.fileContent,
+    });
+
     const listing = await prisma.listing.create({
       data: {
         sellerId,
@@ -437,8 +466,10 @@ export async function agentRoutes(server: FastifyInstance) {
         subscriptionPrice: isSubscription ? data.price : null,
         status: ListingStatus.PENDING_REVIEW,
         fileUrl: data.fileName ? `/uploads/${data.fileName}` : "/uploads/package.json",
-        scanStatus: "clean",
-        scanResults: { verified: true, safe: true, sandboxed: true },
+        fileHash: scanResult.fileHash,
+        fileSizeBytes: BigInt(scanResult.fileSizeBytes),
+        scanStatus: scanResult.status,
+        scanResults: scanResult as any,
         metaTitle: data.title.slice(0, 70),
         metaDescription: (data.tagline || data.description).slice(0, 160),
       },
@@ -620,7 +651,9 @@ export async function agentRoutes(server: FastifyInstance) {
           price: Number(l.priceAmount),
           pricingModel: l.subscriptionPrice ? "Subscription" : "One-Time License",
           fileUrl: l.fileUrl || "agent_workflow.json",
+          fileHash: l.fileHash,
           scanStatus: l.scanStatus,
+          scanResults: l.scanResults,
           status: l.status,
           rejectionReason: l.rejectionReason,
           approvedAt: l.approvedAt,

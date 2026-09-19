@@ -8,11 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
-    "clean": "turbo clean",
+    "dev": "concurrently -n \"web,api\" -c \"cyan,magenta\" \"yarn workspace web dev\" \"yarn workspace api dev\"",
+    "dev:web": "yarn workspace web dev",
+    "dev:api": "yarn workspace api dev",
+    "build": "yarn workspace web build && yarn workspace api build",
+    "build:web": "yarn workspace web build",
+    "build:api": "yarn workspace api build",
+    "lint": "yarn workspace web lint && yarn workspace api lint",
+    "typecheck": "yarn workspace api typecheck",
     "db:generate": "yarn workspace api prisma:generate",
     "db:migrate": "yarn workspace api prisma:migrate",
     "db:seed": "yarn workspace api prisma:seed",
@@ -22,7 +25,7 @@
     "docker:down": "docker compose -f docker/docker-compose.yml down"
   },
   "devDependencies": {
-    "turbo": "^2.4.0"
+    "concurrently": "^10.0.5"
   },
   "packageManager": "yarn@1.22.22",
   "engines": {

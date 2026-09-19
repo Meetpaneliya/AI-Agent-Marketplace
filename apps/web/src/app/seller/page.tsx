@@ -900,8 +900,10 @@ function SellerDashboardContent() {
                     <strong className="text-signal text-sm font-bold mt-0.5 block">${selectedReviewAgent.price}.00</strong>
                   </div>
                   <div>
-                    <span className="text-text-muted block text-[11px] uppercase tracking-wider font-semibold">Package Archive</span>
-                    <strong className="text-text-primary text-xs font-mono truncate mt-0.5 block">{selectedReviewAgent.fileUrl || "agent_workflow.json"}</strong>
+                    <span className="text-text-muted block text-[11px] uppercase tracking-wider font-semibold">Deliverable File</span>
+                    <strong className="text-text-primary text-xs font-mono truncate mt-0.5 block" title={selectedReviewAgent.fileUrl || "agent_workflow.json"}>
+                      {selectedReviewAgent.fileUrl ? selectedReviewAgent.fileUrl.replace(/^\/uploads\//, '') : "agent_workflow.json"}
+                    </strong>
                   </div>
                 </div>
 
@@ -946,25 +948,61 @@ function SellerDashboardContent() {
                       </pre>
                     </div>
 
-                    {/* Deliverable File Details */}
-                    <div className="p-3.5 rounded-xl bg-surface/50 border border-ledger flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-circuit/10 border border-circuit/20 text-circuit flex items-center justify-center font-bold text-sm">
-                          JSON
+                    {/* Deliverable File Details with Real Inspection Action */}
+                    <div className="p-4 rounded-xl bg-surface/50 border border-ledger flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-surface border border-ledger flex items-center justify-center font-mono font-bold text-xs text-circuit flex-shrink-0 shadow-sm">
+                          {selectedReviewAgent.fileUrl?.split('.').pop()?.toUpperCase() || "JSON"}
                         </div>
-                        <div>
-                          <div className="text-xs font-semibold text-text-primary">
-                            {selectedReviewAgent.fileUrl || "agent_workflow.json"}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-text-primary truncate max-w-[260px] sm:max-w-xs" title={selectedReviewAgent.fileUrl}>
+                            {selectedReviewAgent.fileUrl ? selectedReviewAgent.fileUrl.replace(/^\/uploads\//, '') : "agent_workflow.json"}
                           </div>
-                          <div className="text-[11px] text-text-muted">
-                            Format verified • Clean archive container
+                          <div className="text-[11px] text-text-muted mt-0.5 flex items-center gap-2">
+                            <span>Package Deliverable</span>
+                            <span>•</span>
+                            <span className="text-text-secondary">Ready for review</span>
                           </div>
                         </div>
                       </div>
-                      <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
-                        Payload Valid
-                      </span>
+
+                      <a
+                        href={selectedReviewAgent.fileUrl || "#"}
+                        download={selectedReviewAgent.fileUrl?.split('/').pop() || "agent_workflow.json"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-ledger hover:border-circuit hover:text-circuit text-xs font-medium text-text-primary transition-all shadow-sm cursor-pointer self-end sm:self-auto flex-shrink-0"
+                        title="Download attached workflow file to inspect code"
+                      >
+                        <svg className="w-3.5 h-3.5 text-circuit" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span>Download to Inspect</span>
+                      </a>
                     </div>
+
+                    {/* Interactive Live Demo URL (If Provided) */}
+                    {selectedReviewAgent.demoUrl && (
+                      <div className="p-3.5 rounded-xl bg-surface/50 border border-ledger flex items-center justify-between">
+                        <div className="min-w-0 flex-1 pr-3">
+                          <span className="text-[11px] text-text-muted uppercase font-semibold tracking-wider block mb-0.5">
+                            Interactive Demo Sandbox
+                          </span>
+                          <span className="text-xs text-circuit font-mono truncate block" title={selectedReviewAgent.demoUrl}>
+                            {selectedReviewAgent.demoUrl}
+                          </span>
+                        </div>
+                        <a
+                          href={selectedReviewAgent.demoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-signal hover:underline flex-shrink-0 font-medium"
+                        >
+                          <span>Test Sandbox</span>
+                          <span>↗</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right Column (40%): Author, Security & Keys */}
@@ -1018,28 +1056,93 @@ function SellerDashboardContent() {
                       </div>
                     </div>
 
-                    {/* Security & Integrity Checklist */}
-                    <div className="p-4 rounded-xl bg-surface/50 border border-ledger space-y-2">
-                      <h4 className="font-semibold text-text-primary text-xs uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                        <span>🛡️</span>
-                        <span>Automated Security Audit</span>
-                      </h4>
+                    {/* Real Automated Security Audit Results */}
+                    <div className="p-4 rounded-xl bg-surface/50 border border-ledger space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-text-primary text-xs uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                          <span>🛡️</span>
+                          <span>Automated Package Scan</span>
+                        </h4>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold ${
+                          selectedReviewAgent.scanStatus === "flagged"
+                            ? "bg-danger/10 text-danger border border-danger/20"
+                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        }`}>
+                          {selectedReviewAgent.scanStatus === "flagged" ? "⚠️ Issues Flagged" : "✓ Clean & Safe"}
+                        </span>
+                      </div>
+
                       <div className="space-y-1.5 text-xs">
-                        <div className="flex items-center gap-2 text-emerald-400">
-                          <span>✓</span>
-                          <span>Static AST Syntax Parser: 0 errors</span>
+                        <div className="flex items-center justify-between text-text-secondary">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-emerald-400">✓</span>
+                            <span>Format & Syntax:</span>
+                          </span>
+                          <span className="text-text-primary font-mono text-[11px]">
+                            {selectedReviewAgent.scanResults?.checks?.syntax?.label || "Valid Package Format"}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-emerald-400">
-                          <span>✓</span>
-                          <span>Secret Leak Protection: Clean</span>
+
+                        <div className="flex items-center justify-between text-text-secondary">
+                          <span className="flex items-center gap-1.5">
+                            <span className={selectedReviewAgent.scanResults?.checks?.secretLeaks?.passed === false ? "text-danger" : "text-emerald-400"}>
+                              {selectedReviewAgent.scanResults?.checks?.secretLeaks?.passed === false ? "⚠️" : "✓"}
+                            </span>
+                            <span>Credential Leak Check:</span>
+                          </span>
+                          <span className={`font-mono text-[11px] ${
+                            selectedReviewAgent.scanResults?.checks?.secretLeaks?.passed === false ? "text-danger font-semibold" : "text-emerald-400"
+                          }`}>
+                            {selectedReviewAgent.scanResults?.checks?.secretLeaks?.passed === false ? "Leaked Key Detected" : "No Keys Leaked"}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-emerald-400">
-                          <span>✓</span>
-                          <span>Sandbox Isolation: Validated</span>
+
+                        <div className="flex items-center justify-between text-text-secondary">
+                          <span className="flex items-center gap-1.5">
+                            <span className={selectedReviewAgent.scanResults?.checks?.maliciousPatterns?.passed === false ? "text-danger" : "text-emerald-400"}>
+                              {selectedReviewAgent.scanResults?.checks?.maliciousPatterns?.passed === false ? "⚠️" : "✓"}
+                            </span>
+                            <span>Exploit Pattern Check:</span>
+                          </span>
+                          <span className={`font-mono text-[11px] ${
+                            selectedReviewAgent.scanResults?.checks?.maliciousPatterns?.passed === false ? "text-danger font-semibold" : "text-emerald-400"
+                          }`}>
+                            {selectedReviewAgent.scanResults?.checks?.maliciousPatterns?.passed === false ? "Suspicious Code" : "Clean Code"}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-emerald-400">
-                          <span>✓</span>
-                          <span>Execution Manifest: Verified</span>
+
+                        {selectedReviewAgent.fileHash && (
+                          <div className="pt-1.5 border-t border-ledger flex items-center justify-between text-[11px] text-text-muted">
+                            <span>SHA-256 Fingerprint:</span>
+                            <span className="font-mono text-circuit text-[10px] truncate max-w-[130px]" title={selectedReviewAgent.fileHash}>
+                              {selectedReviewAgent.fileHash.slice(0, 16)}...
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Production Reviewer Guidelines & Verification Checklist */}
+                    <div className="p-4 rounded-xl bg-surface/50 border border-ledger space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-text-primary text-xs uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                          <span>📋</span>
+                          <span>Admin Review Checklist</span>
+                        </h4>
+                        <span className="text-[10px] text-text-muted font-mono">Manual Verification</span>
+                      </div>
+                      <div className="space-y-2 text-xs text-text-secondary leading-relaxed">
+                        <div className="flex items-start gap-2">
+                          <span className="text-circuit font-bold">1.</span>
+                          <span><strong>Package Content:</strong> Download and check file for hardcoded credentials or malicious scripts.</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-circuit font-bold">2.</span>
+                          <span><strong>Setup Clarity:</strong> Ensure instructions clearly outline prerequisite accounts and credentials.</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-circuit font-bold">3.</span>
+                          <span><strong>Fair Pricing:</strong> Confirm listing price (${selectedReviewAgent.price}) is reasonable for workflow complexity.</span>
                         </div>
                       </div>
                     </div>

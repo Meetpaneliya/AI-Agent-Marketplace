@@ -10,6 +10,11 @@ import { agentRoutes } from "./routes/agents";
 dotenv.config({ path: "../../.env" });
 dotenv.config(); // Also read local .env if present
 
+// Ensure BigInt (e.g., Prisma fileSizeBytes) can be serialized into JSON safely
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 const server = Fastify({
   logger: {
     level: process.env.LOG_LEVEL || "info",
