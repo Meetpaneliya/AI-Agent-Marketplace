@@ -83,10 +83,11 @@ const start = async () => {
       origin: (origin, cb) => {
         // Allow requests with no origin (like mobile apps, curl, or server-to-server)
         if (!origin) return cb(null, true);
-        // Allow any localhost / 127.0.0.1 port or configured APP URL
+        // Allow any localhost, vercel.app deployments, or configured APP URL
         if (
           origin.includes("localhost") ||
           origin.includes("127.0.0.1") ||
+          origin.includes("vercel.app") ||
           origin === process.env.NEXT_PUBLIC_APP_URL
         ) {
           return cb(null, true);
