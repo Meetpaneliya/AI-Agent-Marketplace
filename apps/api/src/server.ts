@@ -40,11 +40,17 @@ server.get("/v1/health", async () => {
 // ─── Error Handling ───
 server.setErrorHandler((error: any, request, reply) => {
   server.log.error(error);
+
+  let message = error.message || "An unexpected error occurred";
+  if (message.includes("Can't reach database server") || error.code === "P1001") {
+    message = "Database connection error: Unable to connect to PostgreSQL at localhost:5432. Please ensure PostgreSQL or Docker is running (e.g. run 'yarn docker:up').";
+  }
+
   return reply.status(error.statusCode || 500).send({
     success: false,
     error: {
       code: error.code || "INTERNAL_SERVER_ERROR",
-      message: error.message || "An unexpected error occurred",
+      message,
     },
   });
 });

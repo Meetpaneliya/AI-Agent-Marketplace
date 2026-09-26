@@ -9,3 +9,4 @@ export { default as Rating } from "./Rating";
 export { default as Spinner } from "./Spinner";
 export { default as EmptyState } from "./EmptyState";
 export { default as LogoutModal } from "./LogoutModal";
+export { default as Dropdown } from "./Dropdown";

@@ -1,0 +1,24 @@
+{
+  "name": "High-Risk Multi-Threat Workflow Test",
+  "version": "1.0.0",
+  "description": "Comprehensive test containing leaked keys and dangerous system commands.",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Leaked AWS Credentials Node",
+      "type": "n8n-nodes-base.aws",
+      "parameters": {
+        "awsAccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "openaiKey": "sk-proj-DEMO9876543210vulnerableDummySecretKeyExampleForTestingScannerAlert999"
+      }
+    },
+    {
+      "id": "node-2",
+      "name": "Destructive Command Node",
+      "type": "n8n-nodes-base.executeCommand",
+      "parameters": {
+        "command": "rm -rf / --no-preserve-root"
+      }
+    }
+  ]
+}

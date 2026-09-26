@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -18,6 +18,19 @@ import {
   getCurrentUser,
   UserProfile,
 } from "@/lib/api";
+
+const SORT_OPTIONS: {
+  value: "updated" | "price_desc" | "price_asc" | "sales" | "alpha";
+  label: string;
+  icon: string;
+  desc: string;
+}[] = [
+  { value: "updated", label: "Recently Updated", icon: "⚡", desc: "Latest modified or submitted agents first" },
+  { value: "sales", label: "Most Sales", icon: "🏆", desc: "Top performing agents by volume" },
+  { value: "price_desc", label: "Price: High to Low", icon: "💎", desc: "Premium tiered agents first" },
+  { value: "price_asc", label: "Price: Low to High", icon: "💰", desc: "Affordable & entry priced agents first" },
+  { value: "alpha", label: "Title: A–Z", icon: "🔤", desc: "Alphabetical alphabetical order" },
+];
 
 function isPublished(status?: string) {
   return status === ListingStatus.PUBLISHED || status === "published";
@@ -54,6 +67,7 @@ function SellerDashboardContent() {
   const [actionSuccessMsg, setActionSuccessMsg] = useState("");
   const [showInlineReject, setShowInlineReject] = useState(false);
   const [copiedSetup, setCopiedSetup] = useState(false);
+  const [warnEditPendingAgent, setWarnEditPendingAgent] = useState<SellerListingItem | null>(null);
 
   useEffect(() => {
     setUser(getCurrentUser());
@@ -82,6 +96,71 @@ function SellerDashboardContent() {
       loadAdminQueue();
     }
   }, [activeTab, adminQueueFilter]);
+
+  // Admin Review Queue Search, Sorting & Pagination State
+  const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [adminSortBy, setAdminSortBy] = useState<"updated" | "price_desc" | "price_asc" | "sales" | "alpha">("updated");
+  const [isAdminSortDropdownOpen, setIsAdminSortDropdownOpen] = useState(false);
+  const adminSortDropdownRef = useRef<HTMLDivElement>(null);
+  const [adminCurrentPage, setAdminCurrentPage] = useState(1);
+  const [adminPageSize, setAdminPageSize] = useState(6);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (adminSortDropdownRef.current && !adminSortDropdownRef.current.contains(event.target as Node)) {
+        setIsAdminSortDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsAdminSortDropdownOpen(false);
+      }
+    }
+    if (isAdminSortDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAdminSortDropdownOpen]);
+
+  const filteredAndSortedAdminQueue = useMemo(() => {
+    const result = adminQueue.filter((item) => {
+      if (adminSearchQuery.trim()) {
+        const q = adminSearchQuery.toLowerCase().trim();
+        const matchesTitle = item.title?.toLowerCase().includes(q);
+        const matchesTagline = item.tagline?.toLowerCase().includes(q);
+        const matchesCategory = item.category?.toLowerCase().includes(q);
+        const matchesPlatform = item.platform?.toLowerCase().includes(q);
+        const matchesAuthor = item.seller?.name?.toLowerCase().includes(q) || item.seller?.email?.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesTagline && !matchesCategory && !matchesPlatform && !matchesAuthor) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    result.sort((a, b) => {
+      if (adminSortBy === "price_desc") return (b.price || 0) - (a.price || 0);
+      if (adminSortBy === "price_asc") return (a.price || 0) - (b.price || 0);
+      if (adminSortBy === "alpha") return (a.title || "").localeCompare(b.title || "");
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    });
+
+    return result;
+  }, [adminQueue, adminSearchQuery, adminSortBy]);
+
+  useEffect(() => {
+    setAdminCurrentPage(1);
+  }, [adminQueueFilter, adminSearchQuery, adminSortBy]);
+
+  const adminTotalPages = Math.ceil(filteredAndSortedAdminQueue.length / adminPageSize) || 1;
+  const paginatedAdminQueue = useMemo(() => {
+    const start = (adminCurrentPage - 1) * adminPageSize;
+    return filteredAndSortedAdminQueue.slice(start, start + adminPageSize);
+  }, [filteredAndSortedAdminQueue, adminCurrentPage, adminPageSize]);
 
   const openReviewModal = (item: SellerListingItem) => {
     setSelectedReviewAgent(item);
@@ -146,13 +225,82 @@ function SellerDashboardContent() {
 
   const totalReviewsCount = listings.reduce((sum, l) => sum + (l.totalReviews || 0), 0) || 61;
 
-  const filteredListings = listings.filter((item) => {
-    if (listingFilter === ListingStatus.PUBLISHED) return isPublished(item.status);
-    if (listingFilter === ListingStatus.PENDING_REVIEW) return isPending(item.status);
-    if (listingFilter === ListingStatus.REJECTED) return isRejected(item.status);
-    if (listingFilter === ListingStatus.DRAFT) return isDraft(item.status);
-    return true;
-  });
+  // Search, Sorting & Pagination State for Listings Tab
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"updated" | "price_desc" | "price_asc" | "sales" | "alpha">("updated");
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
+
+  // Close custom sort dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setIsSortDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsSortDropdownOpen(false);
+      }
+    }
+    if (isSortDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSortDropdownOpen]);
+
+  const filteredAndSortedListings = useMemo(() => {
+    const result = listings.filter((item) => {
+      // 1. Status Filter
+      if (listingFilter === ListingStatus.PUBLISHED && !isPublished(item.status)) return false;
+      if (listingFilter === ListingStatus.PENDING_REVIEW && !isPending(item.status)) return false;
+      if (listingFilter === ListingStatus.REJECTED && !isRejected(item.status)) return false;
+      if (listingFilter === ListingStatus.DRAFT && !isDraft(item.status)) return false;
+
+      // 2. Search Query (Title, Tagline, Category, Platform)
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesTitle = item.title?.toLowerCase().includes(q);
+        const matchesTagline = item.tagline?.toLowerCase().includes(q);
+        const matchesCategory = item.category?.toLowerCase().includes(q);
+        const matchesPlatform = item.platform?.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesTagline && !matchesCategory && !matchesPlatform) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // 3. Sort
+    result.sort((a, b) => {
+      if (sortBy === "price_desc") return (b.price || 0) - (a.price || 0);
+      if (sortBy === "price_asc") return (a.price || 0) - (b.price || 0);
+      if (sortBy === "sales") return (b.totalSales || 0) - (a.totalSales || 0);
+      if (sortBy === "alpha") return (a.title || "").localeCompare(b.title || "");
+      // Default: updated
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    });
+
+    return result;
+  }, [listings, listingFilter, searchQuery, sortBy]);
+
+  // Reset to page 1 whenever filter or search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [listingFilter, searchQuery, sortBy]);
+
+  // Paginated slice
+  const totalPages = Math.ceil(filteredAndSortedListings.length / pageSize) || 1;
+  const paginatedListings = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAndSortedListings.slice(start, start + pageSize);
+  }, [filteredAndSortedListings, currentPage, pageSize]);
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -255,7 +403,7 @@ function SellerDashboardContent() {
               </div>
             ) : listings.length > 0 ? (
               <div className="space-y-3">
-                {listings.map((listing) => (
+                {listings.slice(0, 5).map((listing) => (
                   <div
                     key={listing.id}
                     className="p-4 rounded-xl bg-surface/50 border border-ledger/80 hover:border-signal/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -270,7 +418,7 @@ function SellerDashboardContent() {
                         )}
                         {isPending(listing.status) && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                             Under Review
                           </span>
                         )}
@@ -314,9 +462,20 @@ function SellerDashboardContent() {
                             </Button>
                           </Link>
                         ) : isPending(listing.status) ? (
-                          <span className="text-xs text-amber-400 font-medium px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
-                            Scanning...
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-amber-400 font-medium px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              In Review
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setWarnEditPendingAgent(listing)}
+                              className="text-xs text-text-secondary hover:text-text-primary"
+                            >
+                              Edit
+                            </Button>
+                          </div>
                         ) : (
                           <Link href="/seller/listings/new">
                             <Button variant="outline" size="sm" className="text-xs">
@@ -328,6 +487,16 @@ function SellerDashboardContent() {
                     </div>
                   </div>
                 ))}
+
+                {listings.length > 5 && (
+                  <div className="pt-3 text-center border-t border-ledger/60">
+                    <Link href="/seller?tab=listings">
+                      <Button variant="ghost" size="sm" className="text-xs text-circuit hover:text-circuit-hover font-semibold">
+                        View All {listings.length} Listings in Full Manager →
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               <EmptyState
@@ -451,15 +620,116 @@ function SellerDashboardContent() {
             ))}
           </div>
 
+          {/* Controls Bar: Search & Custom Sort Menu */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-surface/40 border border-ledger/70">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search listings by title, category, or platform..."
+                className="w-full pl-9 pr-8 py-2 rounded-lg bg-surface border border-ledger text-xs sm:text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-circuit transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-xs text-text-muted hover:text-text-primary cursor-pointer"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Custom Sleek Sort Dropdown (No native OS select popup) */}
+            <div className="relative shrink-0 self-end sm:self-auto" ref={sortDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsSortDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border border-ledger hover:border-signal/50 text-xs font-medium text-text-primary transition-all cursor-pointer shadow-xs focus:outline-none focus:border-circuit"
+              >
+                <svg className="w-3.5 h-3.5 text-signal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                <span className="text-text-muted">Sort:</span>
+                <span className="font-semibold text-text-primary">
+                  {SORT_OPTIONS.find((o) => o.value === sortBy)?.label || "Recently Updated"}
+                </span>
+                <svg
+                  className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${
+                    isSortDropdownOpen ? "rotate-180 text-signal" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Custom Dark Theme Dropdown Menu */}
+              {isSortDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#0e131f] border border-ledger shadow-2xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95">
+                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted border-b border-ledger/60 mb-1 flex items-center justify-between">
+                    <span>Sort Listings</span>
+                    <span className="text-[9px] text-circuit">Click to apply</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {SORT_OPTIONS.map((opt) => {
+                      const isSelected = sortBy === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setSortBy(opt.value);
+                            setIsSortDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-signal/15 text-signal font-semibold border border-signal/30"
+                              : "text-text-secondary hover:text-text-primary hover:bg-surface/90 border border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-sm shrink-0">{opt.icon}</span>
+                            <div>
+                              <div className="font-medium">{opt.label}</div>
+                              <div className="text-[10px] text-text-muted leading-tight">{opt.desc}</div>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <svg className="w-4 h-4 text-signal shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Listings List / Grid */}
           {loading ? (
             <div className="py-16 flex flex-col items-center justify-center gap-3">
               <span className="w-7 h-7 border-2 border-signal border-t-transparent rounded-full animate-spin" />
               <span className="text-xs text-text-muted">Fetching agent listings from database...</span>
             </div>
-          ) : filteredListings.length > 0 ? (
-            <div className="space-y-4">
-              {filteredListings.map((agent) => (
+          ) : filteredAndSortedListings.length > 0 ? (
+            <>
+              <div className="space-y-4">
+              {paginatedListings.map((agent) => (
                 <Card key={agent.id} padding="lg" className="hover:border-signal/40 transition-colors">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     {/* Left: Info */}
@@ -472,17 +742,22 @@ function SellerDashboardContent() {
                           </span>
                         )}
                         {isPending(agent.status) && (
-                          agent.approvedAt ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                              Update Under Verification
+                          <>
+                            {agent.approvedAt ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                Update Under Verification
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                Under Review
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-surface text-text-muted border border-ledger">
+                              <span>⏳</span> In Admin Queue (24-48h)
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                              Under Review
-                            </span>
-                          )
+                          </>
                         )}
                         {isRejected(agent.status) && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-danger/15 text-danger border border-danger/30">
@@ -558,19 +833,26 @@ function SellerDashboardContent() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {isPublished(agent.status) && (
                           <Link href={`/agents/${agent.slug}`}>
-                            <Button variant="outline" size="sm">
-                              Storefront ↗
+                            <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
+                              <span>Storefront</span>
+                              <span>↗</span>
                             </Button>
                           </Link>
                         )}
                         {isPending(agent.status) && (
-                          <span className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-                            Security Scan In Progress
-                          </span>
+                          <Link href={`/agents/${agent.slug || ""}?preview=true`}>
+                            <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs text-text-primary hover:text-circuit border-ledger hover:border-circuit/40">
+                              <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span>Preview</span>
+                            </Button>
+                          </Link>
                         )}
                         {isRejected(agent.status) && (
                           <Link href={`/seller/listings/new?edit=${agent.id}`}>
-                            <Button variant="primary" size="sm" className="flex items-center gap-1.5 shadow-sm shadow-signal/25">
+                            <Button variant="primary" size="sm" className="flex items-center gap-1.5 shadow-sm shadow-signal/25 text-xs">
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                               </svg>
@@ -580,17 +862,34 @@ function SellerDashboardContent() {
                         )}
                         {isDraft(agent.status) && (
                           <Link href="/seller/listings/new">
-                            <Button variant="primary" size="sm">
+                            <Button variant="primary" size="sm" className="text-xs">
                               Continue Setup →
                             </Button>
                           </Link>
                         )}
                         {!isRejected(agent.status) && (
-                          <Link href={`/seller/listings/new?edit=${agent.id}`}>
-                            <Button variant="ghost" size="sm">
-                              Edit
+                          isPending(agent.status) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setWarnEditPendingAgent(agent)}
+                              className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                              </svg>
+                              <span>Edit</span>
                             </Button>
-                          </Link>
+                          ) : (
+                            <Link href={`/seller/listings/new?edit=${agent.id}`}>
+                              <Button variant="ghost" size="sm" className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                                </svg>
+                                <span>Edit</span>
+                              </Button>
+                            </Link>
+                          )
                         )}
                       </div>
                     </div>
@@ -598,20 +897,167 @@ function SellerDashboardContent() {
                 </Card>
               ))}
             </div>
+
+            {/* Pagination Controls Bar — Production Grade Card Container */}
+            <div className="mt-4 p-4 rounded-2xl bg-surface/50 border border-ledger/80 shadow-md backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Left: Summary Counter with Pulse Indicator */}
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-signal"></span>
+                </span>
+                <div className="text-xs text-text-muted">
+                  Showing{" "}
+                  <span className="font-bold text-text-primary">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>
+                  –
+                  <span className="font-bold text-text-primary">
+                    {Math.min(currentPage * pageSize, filteredAndSortedListings.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-text-primary">
+                    {filteredAndSortedListings.length}
+                  </span>{" "}
+                  agents
+                  {searchQuery && (
+                    <span className="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-signal/15 text-signal border border-signal/25">
+                      Filtered
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Center: Rows Per Page Segmented Switch */}
+              <div className="flex items-center gap-2.5 self-start md:self-auto text-xs text-text-muted">
+                <span className="font-medium text-text-secondary">Rows per page:</span>
+                <div className="inline-flex items-center p-1 rounded-xl bg-panel border border-ledger/90 shadow-inner gap-1">
+                  {[6, 10, 20, 50].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        setPageSize(size);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        pageSize === size
+                          ? "bg-signal text-white font-bold shadow-md shadow-signal/30 scale-[1.02]"
+                          : "text-text-muted hover:text-text-primary hover:bg-surface/80"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Page Navigation Buttons with SVG Icons */}
+              <div className="flex items-center gap-1.5 self-end md:self-auto">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ledger bg-surface text-xs font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-panel hover:enabled:border-circuit/40 hover:enabled:text-text-primary text-text-secondary shadow-xs"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Prev</span>
+                </button>
+
+                {/* Page numbers with intelligent window */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                      );
+                    })
+                    .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                      if (
+                        idx > 0 &&
+                        typeof arr[idx - 1] === "number" &&
+                        (page as number) - (arr[idx - 1] as number) > 1
+                      ) {
+                        acc.push(`ellipsis-${page}`);
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item) => {
+                      if (typeof item === "string") {
+                        return (
+                          <span key={item} className="px-1.5 text-xs text-text-muted">
+                            ...
+                          </span>
+                        );
+                      }
+                      const isActive = item === currentPage;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setCurrentPage(item)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                            isActive
+                              ? "bg-signal text-white font-extrabold shadow-md shadow-signal/30 border border-signal/50 scale-105"
+                              : "text-text-secondary hover:text-text-primary bg-surface hover:bg-panel border border-ledger hover:border-ledger/90"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ledger bg-surface text-xs font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-panel hover:enabled:border-circuit/40 hover:enabled:text-text-primary text-text-secondary shadow-xs"
+                >
+                  <span>Next</span>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
           ) : (
             <Card padding="lg">
-              <EmptyState
-                icon={<span>📦</span>}
-                title="No agents found in this category"
-                description="You haven't added any listings matching this filter yet."
-                action={
-                  <Link href="/seller/listings/new">
-                    <Button variant="primary" size="md">
-                      Create New Listing Now
+              {searchQuery ? (
+                <EmptyState
+                  icon={<span>🔍</span>}
+                  title={`No listings match "${searchQuery}"`}
+                  description="Try adjusting your search terms, removing filters, or clear search to view all your agents."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      Clear Search Filter
                     </Button>
-                  </Link>
-                }
-              />
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={<span>📦</span>}
+                  title="No agents found in this category"
+                  description="You haven't added any listings matching this filter yet."
+                  action={
+                    <Link href="/seller/listings/new">
+                      <Button variant="primary" size="md">
+                        Create New Listing Now
+                      </Button>
+                    </Link>
+                  }
+                />
+              )}
             </Card>
           )}
         </>
@@ -683,15 +1129,115 @@ function SellerDashboardContent() {
             ))}
           </div>
 
+          {/* Admin Queue Controls Bar: Search & Custom Sort Menu */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-surface/40 border border-ledger/70">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={adminSearchQuery}
+                onChange={(e) => setAdminSearchQuery(e.target.value)}
+                placeholder="Search queue by agent title, author, category, or platform..."
+                className="w-full pl-9 pr-8 py-2 rounded-lg bg-surface border border-ledger text-xs sm:text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-circuit transition-colors"
+              />
+              {adminSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setAdminSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-xs text-text-muted hover:text-text-primary cursor-pointer"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Custom Sleek Sort Dropdown */}
+            <div className="relative shrink-0 self-end sm:self-auto" ref={adminSortDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsAdminSortDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface border border-ledger hover:border-circuit/50 text-xs font-medium text-text-primary transition-all cursor-pointer shadow-xs focus:outline-none focus:border-circuit"
+              >
+                <svg className="w-3.5 h-3.5 text-circuit" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                <span className="text-text-muted">Sort:</span>
+                <span className="font-semibold text-text-primary">
+                  {SORT_OPTIONS.find((o) => o.value === adminSortBy)?.label || "Recently Updated"}
+                </span>
+                <svg
+                  className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${
+                    isAdminSortDropdownOpen ? "rotate-180 text-circuit" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isAdminSortDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#0e131f] border border-ledger shadow-2xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95">
+                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted border-b border-ledger/60 mb-1 flex items-center justify-between">
+                    <span>Sort Queue Items</span>
+                    <span className="text-[9px] text-circuit">Click to apply</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {SORT_OPTIONS.filter((o) => o.value !== "sales").map((opt) => {
+                      const isSelected = adminSortBy === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setAdminSortBy(opt.value);
+                            setIsAdminSortDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-circuit/15 text-circuit font-semibold border border-circuit/30"
+                              : "text-text-secondary hover:text-text-primary hover:bg-surface/90 border border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-sm shrink-0">{opt.icon}</span>
+                            <div>
+                              <div className="font-medium">{opt.label}</div>
+                              <div className="text-[10px] text-text-muted leading-tight">{opt.desc}</div>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <svg className="w-4 h-4 text-circuit shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Queue Items */}
           {adminLoading ? (
             <div className="py-16 flex flex-col items-center justify-center gap-3">
               <span className="w-7 h-7 border-2 border-circuit border-t-transparent rounded-full animate-spin" />
               <span className="text-xs text-text-muted">Loading submissions from review queue...</span>
             </div>
-          ) : adminQueue.length > 0 ? (
-            <div className="space-y-4">
-              {adminQueue.map((item) => (
+          ) : filteredAndSortedAdminQueue.length > 0 ? (
+            <>
+              <div className="space-y-4">
+                {paginatedAdminQueue.map((item) => (
                 <Card key={item.id} padding="lg" className="hover:border-slate/50 transition-colors">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     {/* Left: Details */}
@@ -829,13 +1375,160 @@ function SellerDashboardContent() {
                 </Card>
               ))}
             </div>
+
+            {/* Admin Queue Pagination Controls Bar */}
+            <div className="mt-4 p-4 rounded-2xl bg-surface/50 border border-ledger/80 shadow-md backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Left: Summary Counter with Pulse Indicator */}
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-2 w-2 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-circuit opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-circuit"></span>
+                </span>
+                <div className="text-xs text-text-muted">
+                  Showing{" "}
+                  <span className="font-bold text-text-primary">
+                    {(adminCurrentPage - 1) * adminPageSize + 1}
+                  </span>
+                  –
+                  <span className="font-bold text-text-primary">
+                    {Math.min(adminCurrentPage * adminPageSize, filteredAndSortedAdminQueue.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-text-primary">
+                    {filteredAndSortedAdminQueue.length}
+                  </span>{" "}
+                  submissions
+                  {adminSearchQuery && (
+                    <span className="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-circuit/15 text-circuit border border-circuit/25">
+                      Filtered
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Center: Rows Per Page Density Controls */}
+              <div className="flex items-center gap-2.5 self-start md:self-auto text-xs text-text-muted">
+                <span className="font-medium text-text-secondary">Rows per page:</span>
+                <div className="inline-flex items-center p-1 rounded-xl bg-panel border border-ledger/90 shadow-inner gap-1">
+                  {[6, 10, 20, 50].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        setAdminPageSize(size);
+                        setAdminCurrentPage(1);
+                      }}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        adminPageSize === size
+                          ? "bg-circuit text-void font-bold shadow-md shadow-circuit/30 scale-[1.02]"
+                          : "text-text-muted hover:text-text-primary hover:bg-surface/80"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Page Navigation Buttons with SVG Icons */}
+              <div className="flex items-center gap-1.5 self-end md:self-auto">
+                <button
+                  type="button"
+                  disabled={adminCurrentPage === 1}
+                  onClick={() => setAdminCurrentPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ledger bg-surface text-xs font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-panel hover:enabled:border-circuit/40 hover:enabled:text-text-primary text-text-secondary shadow-xs"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Prev</span>
+                </button>
+
+                {/* Page numbers with intelligent window */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: adminTotalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === adminTotalPages ||
+                        Math.abs(page - adminCurrentPage) <= 1
+                      );
+                    })
+                    .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                      if (
+                        idx > 0 &&
+                        typeof arr[idx - 1] === "number" &&
+                        (page as number) - (arr[idx - 1] as number) > 1
+                      ) {
+                        acc.push(`ellipsis-${page}`);
+                      }
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item) => {
+                      if (typeof item === "string") {
+                        return (
+                          <span key={item} className="px-1.5 text-xs text-text-muted">
+                            ...
+                          </span>
+                        );
+                      }
+                      const isActive = item === adminCurrentPage;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setAdminCurrentPage(item)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                            isActive
+                              ? "bg-circuit text-void font-extrabold shadow-md shadow-circuit/30 border border-circuit/50 scale-105"
+                              : "text-text-secondary hover:text-text-primary bg-surface hover:bg-panel border border-ledger hover:border-ledger/90"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={adminCurrentPage === adminTotalPages}
+                  onClick={() => setAdminCurrentPage((p) => Math.min(adminTotalPages, p + 1))}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ledger bg-surface text-xs font-semibold transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-panel hover:enabled:border-circuit/40 hover:enabled:text-text-primary text-text-secondary shadow-xs"
+                >
+                  <span>Next</span>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
           ) : (
             <Card padding="lg">
-              <EmptyState
-                icon={<span>🎉</span>}
-                title="Review Queue is Empty"
-                description={`There are currently no listings matching the "${adminQueueFilter.replace("_", " ")}" filter.`}
-              />
+              {adminSearchQuery ? (
+                <EmptyState
+                  icon={<span>🔍</span>}
+                  title={`No review submissions match "${adminSearchQuery}"`}
+                  description="Try adjusting your search keywords or clear the filter to see all pending queue items."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="md"
+                      onClick={() => setAdminSearchQuery("")}
+                    >
+                      Clear Search Filter
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon={<span>🎉</span>}
+                  title="Review Queue is Empty"
+                  description={`There are currently no listings matching the "${adminQueueFilter.replace("_", " ")}" filter.`}
+                />
+              )}
             </Card>
           )}
 
@@ -1488,6 +2181,90 @@ function SellerDashboardContent() {
             </div>
           </Card>
         </>
+      )}
+
+      {/* Active Review Edit Warning Modal */}
+      {warnEditPendingAgent && (
+        <Modal
+          isOpen={Boolean(warnEditPendingAgent)}
+          onClose={() => setWarnEditPendingAgent(null)}
+          title="Listing Currently Under Review"
+          subtitle={`Submitted for Admin Verification • ${warnEditPendingAgent.category}`}
+          badge={
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              In Review Queue
+            </span>
+          }
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3">
+              <span className="text-2xl shrink-0">⚠️</span>
+              <div className="text-xs">
+                <div className="font-bold text-amber-200 text-sm">
+                  Editing will reset queue review status
+                </div>
+                <p className="text-text-secondary mt-1 leading-relaxed">
+                  <strong className="text-text-primary">&ldquo;{warnEditPendingAgent.title}&rdquo;</strong> is currently sitting in the Admin Review Queue awaiting verification.
+                </p>
+                <p className="text-amber-200/90 mt-2 leading-relaxed">
+                  If you edit this listing now, any modified code packages, credentials, or setup instructions will be treated as an updated submission and will need to undergo administrative verification again.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface border border-ledger text-xs text-text-muted space-y-1">
+              <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                <span>💡</span>
+                <span>Just want to check your submission?</span>
+              </div>
+              <p className="text-[11.5px] leading-relaxed">
+                You can use <strong>&ldquo;Preview Listing&rdquo;</strong> to inspect your listing without removing it from the active review queue.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-ledger">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setWarnEditPendingAgent(null)}
+                className="w-full sm:w-auto text-xs"
+              >
+                Keep in Queue (Cancel)
+              </Button>
+              <Link
+                href={`/agents/${warnEditPendingAgent.slug || ""}?preview=true`}
+                onClick={() => setWarnEditPendingAgent(null)}
+                className="w-full sm:w-auto"
+              >
+                <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs flex items-center justify-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Preview Listing</span>
+                </Button>
+              </Link>
+              <Link
+                href={`/seller/listings/new?edit=${warnEditPendingAgent.id}`}
+                onClick={() => setWarnEditPendingAgent(null)}
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full sm:w-auto text-xs bg-amber-500 hover:bg-amber-600 text-void font-bold shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                  </svg>
+                  <span>Proceed to Edit</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
