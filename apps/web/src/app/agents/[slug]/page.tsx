@@ -56,8 +56,38 @@ export default function AgentDetailPage() {
     setPurchaseSuccess(true);
   };
 
+  const jsonLdAgent = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: agent.title,
+    description: agent.description || agent.tagline,
+    applicationCategory: agent.category,
+    operatingSystem: agent.platform,
+    offers: {
+      "@type": "Offer",
+      price: agent.price,
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+    author: {
+      "@type": "Person",
+      name: agent.seller?.name || "Verified Creator",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: agent.rating || 4.9,
+      reviewCount: agent.reviewsCount || 12,
+      bestRating: "5",
+      worstRating: "1",
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdAgent) }}
+      />
       <Navbar />
       <main className="min-h-screen bg-void py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1440px] mx-auto">

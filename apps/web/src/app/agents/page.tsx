@@ -314,7 +314,7 @@ function AgentsMarketplaceContent() {
           {/* Agents Catalog Pagination Controls Bar */}
           <div className="mt-8 p-4 rounded-2xl bg-surface/50 border border-ledger/80 shadow-md backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Left: Summary Counter with Pulse Indicator */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-center md:text-left">
               <span className="flex h-2 w-2 relative shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-signal"></span>
@@ -342,7 +342,7 @@ function AgentsMarketplaceContent() {
             </div>
 
             {/* Center: Rows Per Page Density Controls */}
-            <div className="flex items-center gap-2.5 self-start md:self-auto text-xs text-text-muted">
+            <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-xs text-text-muted">
               <span className="font-medium text-text-secondary">Agents per page:</span>
               <div className="inline-flex items-center p-1 rounded-xl bg-panel border border-ledger/90 shadow-inner gap-1">
                 {[6, 9, 18, 36].map((size) => (
@@ -366,7 +366,7 @@ function AgentsMarketplaceContent() {
             </div>
 
             {/* Right: Page Navigation Buttons with SVG Icons */}
-            <div className="flex items-center gap-1.5 self-end md:self-auto">
+            <div className="flex items-center justify-center md:justify-end gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
               <button
                 type="button"
                 disabled={currentPage === 1}

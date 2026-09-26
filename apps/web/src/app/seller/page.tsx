@@ -593,7 +593,7 @@ function SellerDashboardContent() {
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 border-b border-ledger pb-3 flex-wrap">
+          <div className="flex items-center gap-2 border-b border-ledger pb-3 overflow-x-auto scrollbar-none flex-nowrap -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap touch-pan-x">
             {[
               { id: "all", label: `All Listings (${listings.length})` },
               { id: ListingStatus.PUBLISHED, label: `Published (${publishedListings.length})` },
@@ -604,7 +604,7 @@ function SellerDashboardContent() {
               <button
                 key={tab.id}
                 onClick={() => setListingFilter(tab.id as ListingStatus | "all")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                   listingFilter === tab.id
                     ? "bg-signal text-white font-semibold shadow-sm shadow-signal/25"
                     : tab.id === ListingStatus.REJECTED && rejectedListings.length > 0
@@ -901,7 +901,7 @@ function SellerDashboardContent() {
             {/* Pagination Controls Bar — Production Grade Card Container */}
             <div className="mt-4 p-4 rounded-2xl bg-surface/50 border border-ledger/80 shadow-md backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
               {/* Left: Summary Counter with Pulse Indicator */}
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-center md:text-left">
                 <span className="flex h-2 w-2 relative shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-signal"></span>
@@ -929,7 +929,7 @@ function SellerDashboardContent() {
               </div>
 
               {/* Center: Rows Per Page Segmented Switch */}
-              <div className="flex items-center gap-2.5 self-start md:self-auto text-xs text-text-muted">
+              <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-xs text-text-muted">
                 <span className="font-medium text-text-secondary">Rows per page:</span>
                 <div className="inline-flex items-center p-1 rounded-xl bg-panel border border-ledger/90 shadow-inner gap-1">
                   {[6, 10, 20, 50].map((size) => (
@@ -953,7 +953,7 @@ function SellerDashboardContent() {
               </div>
 
               {/* Right: Page Navigation Buttons with SVG Icons */}
-              <div className="flex items-center gap-1.5 self-end md:self-auto">
+              <div className="flex items-center justify-center md:justify-end gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
                 <button
                   type="button"
                   disabled={currentPage === 1}
@@ -1108,7 +1108,7 @@ function SellerDashboardContent() {
           )}
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 border-b border-ledger pb-3 flex-wrap">
+          <div className="flex items-center gap-2 border-b border-ledger pb-3 overflow-x-auto scrollbar-none flex-nowrap -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap touch-pan-x">
             {[
               { id: "pending_review", label: "Pending Review" },
               { id: "rejected", label: "Changes Requested / Rejected" },
@@ -1118,7 +1118,7 @@ function SellerDashboardContent() {
               <button
                 key={tab.id}
                 onClick={() => setAdminQueueFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   adminQueueFilter === tab.id
                     ? "bg-circuit text-void font-bold shadow-sm shadow-circuit/25"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface"
@@ -1379,7 +1379,7 @@ function SellerDashboardContent() {
             {/* Admin Queue Pagination Controls Bar */}
             <div className="mt-4 p-4 rounded-2xl bg-surface/50 border border-ledger/80 shadow-md backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
               {/* Left: Summary Counter with Pulse Indicator */}
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-center md:text-left">
                 <span className="flex h-2 w-2 relative shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-circuit opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-circuit"></span>
@@ -1407,7 +1407,7 @@ function SellerDashboardContent() {
               </div>
 
               {/* Center: Rows Per Page Density Controls */}
-              <div className="flex items-center gap-2.5 self-start md:self-auto text-xs text-text-muted">
+              <div className="flex items-center justify-center md:justify-start gap-2.5 w-full md:w-auto text-xs text-text-muted">
                 <span className="font-medium text-text-secondary">Rows per page:</span>
                 <div className="inline-flex items-center p-1 rounded-xl bg-panel border border-ledger/90 shadow-inner gap-1">
                   {[6, 10, 20, 50].map((size) => (
@@ -1431,7 +1431,7 @@ function SellerDashboardContent() {
               </div>
 
               {/* Right: Page Navigation Buttons with SVG Icons */}
-              <div className="flex items-center gap-1.5 self-end md:self-auto">
+              <div className="flex items-center justify-center md:justify-end gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
                 <button
                   type="button"
                   disabled={adminCurrentPage === 1}

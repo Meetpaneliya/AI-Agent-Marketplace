@@ -82,7 +82,7 @@ export default function Dropdown({
 
       {isOpen && (
         <div
-          className={`absolute left-0 sm:left-auto sm:right-0 mt-1.5 ${menuWidth} rounded-xl bg-[#0e131f] border border-ledger shadow-2xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95`}
+          className={`absolute left-0 sm:left-auto sm:right-0 mt-1.5 ${menuWidth} max-w-[calc(100vw-2rem)] rounded-xl bg-[#0e131f] border border-ledger shadow-2xl p-1.5 z-50 animate-in fade-in-50 zoom-in-95`}
         >
           <div className="max-h-60 overflow-y-auto space-y-0.5 scrollbar-thin">
             {options.map((opt) => {
