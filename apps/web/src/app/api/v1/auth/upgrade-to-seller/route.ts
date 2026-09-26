@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const { rows } = await pool.query(
-      `UPDATE "User" SET role = 'SELLER', is_seller = true, updated_at = NOW() 
+      `UPDATE "users" SET role = 'SELLER', is_seller = true, updated_at = NOW() 
        WHERE id = $1 RETURNING id, email, name, role, is_seller`,
       [auth.userId]
     );

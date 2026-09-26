@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
     // Check existing
     const existing = await pool.query(
-      `SELECT id FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+      `SELECT id FROM "users" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
       [email.trim()]
     );
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const userIsSeller = assignedRole === "SELLER";
 
     await pool.query(
-      `INSERT INTO "User" (id, email, password_hash, name, role, is_seller, updated_at) 
+      `INSERT INTO "users" (id, email, password_hash, name, role, is_seller, updated_at) 
        VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [userId, email.trim(), passwordHash, name.trim(), assignedRole, userIsSeller]
     );

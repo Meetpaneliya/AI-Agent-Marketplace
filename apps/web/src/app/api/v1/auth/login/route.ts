@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     const { rows } = await pool.query(
-      `SELECT id, email, password_hash, name, role, is_seller, avatar_url FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+      `SELECT id, email, password_hash, name, role, is_seller, avatar_url FROM "users" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
       [email.trim()]
     );
 

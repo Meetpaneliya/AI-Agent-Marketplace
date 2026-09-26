@@ -13,8 +13,8 @@ export async function GET(req: Request) {
               u.name as "sellerName"
        FROM "listings" l
        LEFT JOIN "categories" c ON l.category_id = c.id
-       LEFT JOIN "User" u ON l.seller_id = u.id
-       WHERE l.status IN ('PUBLISHED', 'published')
+       LEFT JOIN "users" u ON l.seller_id = u.id
+       WHERE l.status::text IN ('published', 'PUBLISHED')
        ORDER BY l.created_at DESC`
     );
 
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
         categoryId,
         price,
         isSub ? price : null,
-        status === "DRAFT" ? "DRAFT" : "PENDING_REVIEW",
+        status?.toLowerCase() === "draft" ? "draft" : "pending_review",
       ]
     );
 
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
       totalViews: 0,
       avgRating: 5.0,
       totalReviews: 0,
-      status: status === "DRAFT" ? "DRAFT" : "PENDING_REVIEW",
+      status: status?.toLowerCase() === "draft" ? "DRAFT" : "PENDING_REVIEW",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

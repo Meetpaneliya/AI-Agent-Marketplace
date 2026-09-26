@@ -35,9 +35,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       );
     }
 
-    // Determine status: if it was PUBLISHED, modifying it moves it to PENDING_REVIEW for safety
+    // Determine status: if it was PUBLISHED, modifying it moves it to pending_review for safety
     const newStatus =
-      existing.status === "PUBLISHED" ? "PENDING_REVIEW" : (body.status || existing.status);
+      existing.status === "published" || existing.status === "PUBLISHED"
+        ? "pending_review"
+        : (body.status ? body.status.toLowerCase() : existing.status);
 
     const isSub = body.pricingModel === "subscription";
 

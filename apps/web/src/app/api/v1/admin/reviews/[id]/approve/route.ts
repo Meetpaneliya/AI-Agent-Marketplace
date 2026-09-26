@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     await pool.query(
       `UPDATE "listings" 
-       SET status = 'PUBLISHED', approved_at = NOW(), rejection_reason = NULL, updated_at = NOW() 
+       SET status = 'published', approved_at = NOW(), rejection_reason = NULL, updated_at = NOW() 
        WHERE id = $1`,
       [id]
     );

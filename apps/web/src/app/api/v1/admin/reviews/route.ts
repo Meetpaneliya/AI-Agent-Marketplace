@@ -29,7 +29,7 @@ export async function GET(req: Request) {
              u.seller_verified as "sellerVerified"
       FROM "listings" l
       LEFT JOIN "categories" c ON l.category_id = c.id
-      LEFT JOIN "User" u ON l.seller_id = u.id
+      LEFT JOIN "users" u ON l.seller_id = u.id
     `;
 
     const params: any[] = [];
